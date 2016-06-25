@@ -1,0 +1,33 @@
+Mandatory:
+(klart)		“Perspective” camera
+(klart)		Texturs
+		Ambient, diffuse AND specular lighting in your shaders
+(klart)		Use “w-a-s-d” for moving and mouse camera control
+(klart)		Vertex and Fragment shaders
+
+
+Core techniques:
+		Deferred Rendering
+
+
+Geometry:
+(klart)		Parsing and rendering an existing model format
+		Level of Detail using Tessellation /// Displacement mapping using Tessellation hardware
+
+
+Texturing and Lighting:
+		Screen Space Ambient Occlusion
+
+
+Projection Techniques:
+		Shadow mapping
+
+
+Acceleration Techniques:
+(klart)		Back face culling using Geometry Shader
+		Occlusion culling /// frustum culling
+
+
+Other techniques:
+		Glow-effect
+		Make a small game in your application

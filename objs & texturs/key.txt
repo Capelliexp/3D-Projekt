@@ -1,0 +1,25 @@
+v = vektor
+vt = u-v koordinater
+vn = normalriktning
+
+Kd = diffuse color
+Ka = ambient color
+Ks = specular color
+	Ns = specular weight (0-1000)
+
+Ke = Emissive color
+
+d / Tr = density / transparancy 
+
+illum = illumination models:
+		0. Color on and Ambient off
+		1. Color on and Ambient on
+		2. Highlight on
+		3. Reflection on and Ray trace on
+		4. Transparency: Glass on, Reflection: Ray trace on
+		5. Reflection: Fresnel on and Ray trace on
+		6. Transparency: Refraction on, Reflection: Fresnel off and Ray trace on
+		7. Transparency: Refraction on, Reflection: Fresnel on and Ray trace on
+		8. Reflection on and Ray trace off
+		9. Transparency: Glass on, Reflection: Ray trace off
+		10. Casts shadows onto invisible surfaces

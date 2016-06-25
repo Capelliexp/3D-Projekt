@@ -1,0 +1,7 @@
+﻿D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\FragmentLightShadingPass.hlsl(60,21-28): warning X3081: comma expression used where a vector constructor may have been intended
+D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\FragmentLightShadingPass.hlsl(60,21-33): warning X3081: comma expression used where a vector constructor may have been intended
+D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\FragmentLightShadingPass.hlsl(65,69-75): warning X3081: comma expression used where a vector constructor may have been intended
+D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\FragmentLightShadingPass.hlsl(65,69-79): warning X3081: comma expression used where a vector constructor may have been intended
+  
+  compilation object save succeeded; see D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\Debug\FragmentLightShadingPass.cso
+  Demo.vcxproj -> D:\Dropbox\Skola\Programmering\3D\Project\Filip Deferred Rendering\Debug\Project.exe
