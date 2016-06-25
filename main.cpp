@@ -73,7 +73,7 @@ ID3D11Buffer* MTLBuffer_Box = nullptr;
 ID3D11Buffer* gConstantBuffer_Boll = nullptr;
 ID3D11Buffer* MTLBuffer_Drake = nullptr;
 
-//-----------------------	Objekttexturer
+//-----------------------	Object textures
 
 ID3D11ShaderResourceView* gTextureView_BTH;					//texturerna
 ID3D11ShaderResourceView* gTextureView_Box;
@@ -83,7 +83,7 @@ ID3D11ShaderResourceView* gFirstPass_DiffuseAlbedo;
 ID3D11ShaderResourceView* gFirstPass_SpecularAlbedo;
 ID3D11ShaderResourceView* gFirstPass_Position;
 
-//-----------------------	Buffrar
+//-----------------------	Buffers
 
 ID3D11Buffer* MatriserBuffer = nullptr;
 ID3D11Buffer* CamPosBuffer = nullptr;
@@ -110,12 +110,12 @@ ID3D11PixelShader* gPixelShaderShadow = nullptr;
 
 //-----------------------	RTV, DSV och SRV
 
-ID3D11RenderTargetView* gBackbufferRTV = nullptr;	//vår output till skärmen
-ID3D11DepthStencilView* gDepthStencilView;			//till depthtest
+ID3D11RenderTargetView* gBackbufferRTV = nullptr;	//screen output
+ID3D11DepthStencilView* gDepthStencilView;			//depth test
 
 ID3D11RenderTargetView* gFirstPassRTV[4];	//shader output
 ID3D11ShaderResourceView* gFirstPassSRV[4];	//shader input
-ID3D11Texture2D* FirstPassTex[4];			//används för konvertering mellan RTV och SRV
+ID3D11Texture2D* FirstPassTex[4];			//texture for RTV and SRV
 
 ID3D11RenderTargetView* gLightShadingPassRTV;	//skapa dessa...
 ID3D11ShaderResourceView* gLightShadingPassSRV;
@@ -253,9 +253,9 @@ void CreateOtherBuffers(){
 }
 
 void CreateRastarizer() {
-	D3D11_RASTERIZER_DESC Rast;		//det finns en D3D11_RASTERIZER_DESC1 också...
+	D3D11_RASTERIZER_DESC Rast;		//maybe use D3D11_RASTERIZER_DESC1 ???
 	Rast.FillMode = D3D11_FILL_SOLID;
-	Rast.CullMode = D3D11_CULL_NONE;	//NONE BACK FRONT
+	Rast.CullMode = D3D11_CULL_NONE;	//NONE / BACK / FRONT
 	Rast.FrontCounterClockwise = FALSE;
 	Rast.DepthBias = 0;
 	Rast.DepthBiasClamp = 0.0f;
@@ -267,7 +267,7 @@ void CreateRastarizer() {
 
 	gDevice->CreateRasterizerState(&Rast, &RastState);	//denna fungerar ej (gör den inte ???)
 
-	gDeviceContext->RSSetState(RastState);	//ny
+	gDeviceContext->RSSetState(RastState);
 }
 
 void CreateDepth() {
@@ -403,7 +403,7 @@ void CreateShaders(){
 
 void CreateTexturesAndViews(){
 
-	CoInitialize(NULL); //anropas endast 1 gång i programmet
+	CoInitialize(NULL); //only call this once in the program
 
 	//-------------	BTH IMAGE
 
@@ -439,7 +439,7 @@ void CreateTexturesAndViews(){
 
 	pTexture_BTH->Release();
 
-	//------------- Box textur
+	//------------- Box texture
 
 	CreateWICTextureFromFile(gDevice, gDeviceContext, L"objs & texturs/Box & Boll/brick_16.jpg", NULL, &gTextureView_Box, 0);
 
@@ -464,7 +464,7 @@ void CreateTexturesAndViews(){
 	gDevice->CreateTexture2D(&textureDesc, NULL, &FirstPassTex[2]);
 	gDevice->CreateTexture2D(&textureDesc, NULL, &FirstPassTex[3]);
 
-	gDevice->CreateTexture2D(&textureDesc, NULL, &LightShadingTex);	//till FinalPass
+	gDevice->CreateTexture2D(&textureDesc, NULL, &LightShadingTex);
 
 	//-------------	Create RTVs
 
@@ -478,7 +478,7 @@ void CreateTexturesAndViews(){
 	gDevice->CreateRenderTargetView(FirstPassTex[2], &renderTargetViewDesc, &gFirstPassRTV[2]);
 	gDevice->CreateRenderTargetView(FirstPassTex[3], &renderTargetViewDesc, &gFirstPassRTV[3]);
 
-	gDevice->CreateRenderTargetView(LightShadingTex, &renderTargetViewDesc, &gLightShadingPassRTV);	//till FinalPass
+	gDevice->CreateRenderTargetView(LightShadingTex, &renderTargetViewDesc, &gLightShadingPassRTV);
 
 	//-------------	Create SRVs
 
@@ -494,11 +494,10 @@ void CreateTexturesAndViews(){
 	gDevice->CreateShaderResourceView(FirstPassTex[2], &shaderResourceViewFromFirstPass, &gFirstPassSRV[2]);
 	gDevice->CreateShaderResourceView(FirstPassTex[3], &shaderResourceViewFromFirstPass, &gFirstPassSRV[3]);
 
-	gDevice->CreateShaderResourceView(LightShadingTex, &shaderResourceViewFromFirstPass, &gLightShadingPassSRV);	//till FinalPass
+	gDevice->CreateShaderResourceView(LightShadingTex, &shaderResourceViewFromFirstPass, &gLightShadingPassSRV);
 }
 
 void CreateTriangleData(){
-
 	OBJFormat Floor[6] = {
 		-5.0f, 0.0f, 5.0f,		//v0 pos	-	top/vänster	-	1
 		0.0f, 0.0f,				//v0 tex
@@ -613,7 +612,7 @@ void CreateTriangleData(){
 	BollData_MTL.pSysMem = BollAlbedo;
 	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &BollData_MTL, &gConstantBuffer_Boll);
 
-	//-----------------------------------------------	Drake
+	//-----------------------------------------------	Dragon
 
 	OBJFormat* Drake = new OBJFormat[231288];
 	MTLFormat* DrakeAlbedo = new MTLFormat[1];
@@ -682,7 +681,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
-	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, /*gDepthStencilView*/ nullptr);	//gFirstPassRTV är en array [4]
+	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, /*gDepthStencilView*/ nullptr);	//gFirstPassRTV is an array [4]
 
 	//--------------------
 
@@ -694,7 +693,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	//--------------------
 
-	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//vilket objekt som nu ska ritas
+	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//what object we are drawing
 
 	gDeviceContext->VSSetConstantBuffers(0, 1, &MatriserBuffer);
 

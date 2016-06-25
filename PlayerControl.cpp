@@ -8,8 +8,8 @@
 //https://msdn.microsoft.com/en-us/library/windows/desktop/gg153550(v=vs.85).aspx
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms648393(v=vs.85).aspx
 
-float movementSpeed = 2.0f;		// 2 & 400
-float cameraSpeed = 0.002f;		// 0.002f & 0.0002f
+float movementSpeed = 2.0f;
+float cameraSpeed = 0.002f;
 
 void Forward(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
 

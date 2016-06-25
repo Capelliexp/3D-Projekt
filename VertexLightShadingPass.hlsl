@@ -3,7 +3,7 @@ struct VS_OUT {
 	float2 texcoord: TexCoord;
 };
 
-VS_OUT VS_main(uint VertexID: SV_VertexID){	//skapar en fullscreen quad ???
+VS_OUT VS_main(uint VertexID: SV_VertexID) {	//skapar en fullscreen quad
 	VS_OUT output;
 
 	output.texcoord = float2((VertexID << 1) & 2, VertexID & 2);

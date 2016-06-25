@@ -7,13 +7,7 @@ VS_OUT VS_main(uint VertexID: SV_VertexID) {	//skapar en fullscreen quad
 	VS_OUT output;
 
 	output.texcoord = float2((VertexID << 1) & 2, VertexID & 2);
-
-	if (VertexID == 0)
-		output.position = float4(0.0, 0.5, 0.5, 1.0);
-	else if (VertexID == 2)
-		output.position = float4(0.5, -0.5, 0.5, 1.0);
-	else if (VertexID == 1)
-		output.position = float4(-0.5, -0.5, 0.5, 1.0);
+	output.position = float4(output.texcoord * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
 
 	return output;
 }
