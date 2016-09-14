@@ -681,7 +681,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
-	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, /*gDepthStencilView*/ nullptr);	//gFirstPassRTV is an array [4]
+	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView /*nullptr*/);	//gFirstPassRTV is an array [4]
 
 	//--------------------
 
@@ -709,6 +709,8 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 }
 
 void RenderLightShadingPass(){
+
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);	//kan byta till LIST nen då krävs 6 drawcalls
 

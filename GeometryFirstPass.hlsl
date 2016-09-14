@@ -43,7 +43,7 @@ void GS_main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> OutputStream
 			float3 cameraToTriangle = (float3)output.PositionWS - CamPos;
 			float dotproduct = dot(cameraToTriangle, output.NormalWS);
 
-			if (dotproduct > 0.0f) {	//cull
+			if (dotproduct > 0.4f) {	//cull
 				OutputStream.RestartStrip();
 				break;
 			}

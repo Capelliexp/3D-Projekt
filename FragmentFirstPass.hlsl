@@ -39,6 +39,6 @@ PSOutput PS_main1(in PSInput input) : SV_Target{
 	output.SpecularAlbedo = float4(Ks, Ns);
 	output.Position = float4(input.PositionWS, 1);
 
-	return output;
+	return output;	//om 1 render target används kommer vi se normalfärgen
 	//return float4(255, 0, 0, 1);
 }
