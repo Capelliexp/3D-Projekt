@@ -151,17 +151,24 @@ void Keyboard();
 void Mouse();
 void Clock();
 
+void Render_pre();
+void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11ShaderResourceView* texure);
+void RenderLightShadingPass();
+void RenderFINAL();
+
 //-----------------------	Light-structen
 
-struct LightStruct{
-	XMMATRIX ViewMatrixLight;
-	XMVECTOR LightRange;
-	XMVECTOR PosLight;
-	float shit1;
-	XMVECTOR ViewLight;
-	float shit2;
-
-	unsigned short LightType;	//1 = pointlight, 2 = directional light, 3 = spotlight
+struct LightStruct{		//multiple of 16!
+	XMMATRIX ViewMatrixLight;	//64-byte
+	XMVECTOR LightRange;		//16-byte
+	XMVECTOR PosLight;			//16-byte
+	XMVECTOR ViewLight;			//16-byte
+	XMVECTOR SpotlightAngles;	//16-byte
+	unsigned short LightType;	//2-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
+	short shit1;				//2-byte
+	float shit2;				//4-byte
+	float shit3;				//4-byte
+	float shit4;				//4-byte
 };
 
 LightStruct LightObject1;
@@ -218,11 +225,12 @@ void CreateLightObjects() {
 
 	//---
 
-	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ 2.5,3.0,2.5 }, { 2.5,0,2.5 }, { 0,1,0 });
+	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ 2.5,3.0,2.5 }, { 2.5,0,2.5 }, { 0,1,0 });		//pos, look, up
 	LightObject1.LightRange = {10.0, 0.0, 0.0};
-	LightObject1.PosLight = { 2.5,3.0,2.5 };
-	LightObject1.ViewLight = { 2.5,0,2.5 };
-	LightObject1.LightType = 3;
+	LightObject1.PosLight = { 2.5, 3.0, 2.5 };
+	LightObject1.ViewLight = { 2.5, 0.0, 2.5 };
+	LightObject1.SpotlightAngles = { 45.0, 45.0 };
+	LightObject1.LightType = 2;
 
 	D3D11_SUBRESOURCE_DATA Light1;
 	Light1.pSysMem = &LightObject1;
@@ -232,7 +240,6 @@ void CreateLightObjects() {
 	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1[0]);
 
 	//---
-
 }
 
 void CreateOtherBuffers(){
@@ -280,7 +287,7 @@ void CreateDepth() {
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	descDepth.SampleDesc.Count = 4;  // SAME AS BACK BUFFER, OR IT WILL BLOW!
+	descDepth.SampleDesc.Count = 1;  // SAME AS BACK BUFFER, OR IT WILL BLOW!
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;    // IMPORTANT
@@ -659,17 +666,103 @@ void SetScissor() {
 
 //-----
 
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
+	MSG msg = { 0 };
+	HWND wndHandle = InitWindow(hInstance);	//Skapar fönstret
+
+	if (wndHandle) {
+		CreateDirect3DContext(wndHandle);	//Skapa och koppla SwapChain, Device och Device Context
+
+		SetViewport();
+		SetScissor();
+		CreateMatrixObjects();
+		CreateOtherBuffers();
+		CreateRastarizer();
+		CreateDepth();
+		CreateShaders();
+		CreateTriangleData();
+		CreateTexturesAndViews();
+
+		ShowWindow(wndHandle, nCmdShow);
+
+		SetCursorPos(960, 540);
+
+		while (WM_QUIT != msg.message)
+		{
+			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+			else
+			{
+				Clock();
+				Mouse();
+				Keyboard();
+				Update();
+
+				Render_pre();
+
+				RenderFirstPass(gVertexBuffer_Floor, nullptr, 6, gTextureView_Box);
+				RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
+				RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Drake, MTLBuffer_Drake, 231288, gTextureView_BTH);
+
+				RenderLightShadingPass();
+
+				RenderFINAL();
+
+				gSwapChain->Present(0, 0);	//Växla front- och back-buffer
+			}
+		}
+
+		gVertexBuffer_Floor->Release();		//LÄGG TILL FLER OBJ:S HÄR
+		gVertexBuffer_Light->Release();
+		gVertexBuffer_Box->Release();
+		gVertexBuffer_Boll->Release();
+		gVertexBuffer_Drake->Release();
+
+		MTLBuffer_Box->Release();		//LÄGG TILL FLER MTL:ER HÄR
+		gConstantBuffer_Boll->Release();
+		MTLBuffer_Drake->Release();
+
+		//-----
+		gVertexLayoutFinal->Release();
+		gVertexLayoutFirstPass->Release();
+
+		gVertexShaderFirstPass->Release();
+		gVertexShaderLightShadingPass->Release();
+		gVertexShaderFinal->Release();
+
+		gGeometryShaderFirstPass->Release();
+
+		gPixelShaderFirstPass->Release();
+		gPixelShaderLightShadingPass->Release();
+		gPixelShaderFinal->Release();
+
+		//-----
+
+		gBackbufferRTV->Release();
+		gSwapChain->Release();
+		gDevice->Release();
+		gDeviceContext->Release();
+		DestroyWindow(wndHandle);
+	}
+
+	return (int)msg.wParam;
+}
+
 void Render_pre(){
 
 	float clearColor[] = { 0, 0, 0, 1 };
 
-	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[0], clearColor);
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[1], clearColor);
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[2], clearColor);
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[3], clearColor);
-
 	gDeviceContext->ClearRenderTargetView(gLightShadingPassRTV, clearColor);
+	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);
 
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
@@ -683,7 +776,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
-	gDeviceContext->OMSetRenderTargets(4, &gBackbufferRTV, nullptr);	/*gDepthStencilView*//*nullptr*///gFirstPassRTV is an array [4]
+	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView);	/*gDepthStencilView*//*nullptr*///gFirstPassRTV is an array [4]
 
 	//--------------------
 
@@ -711,11 +804,6 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 }
 
 void RenderLightShadingPass(){
-
-	float clearColor[] = { 0, 0, 0, 1 };
-	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);
-
-	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);	//kan byta till LIST nen då krävs 6 drawcalls
 
@@ -770,93 +858,6 @@ void RenderFINAL() {
 	//--------------------
 
 	gDeviceContext->Draw(3, 0);
-}
-
-int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ){
-	MSG msg = { 0 };
-	HWND wndHandle = InitWindow(hInstance);	//Skapar fönstret
-	
-	if (wndHandle){
-		CreateDirect3DContext(wndHandle);	//Skapa och koppla SwapChain, Device och Device Context
-
-		SetViewport();
-		SetScissor();
-		CreateMatrixObjects();
-		CreateOtherBuffers();
-		CreateRastarizer();
-		CreateDepth();
-		CreateShaders();
-		CreateTriangleData();
-		CreateTexturesAndViews();
-
-		ShowWindow(wndHandle, nCmdShow);
-
-		SetCursorPos(960, 540);
-
-		while (WM_QUIT != msg.message)
-		{
-			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-			else
-			{
-				Clock();
-				Mouse();
-				Keyboard();
-				Update();
-
-				Render_pre();
-
-				RenderFirstPass(gVertexBuffer_Floor,	nullptr,				6,		gTextureView_Box);
-				RenderFirstPass(gVertexBuffer_Light,	nullptr,				6,		gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Box,		MTLBuffer_Box,			36,		gTextureView_Box);
-				RenderFirstPass(gVertexBuffer_Boll,		gConstantBuffer_Boll,	2280,	gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Drake,	MTLBuffer_Drake,		231288, gTextureView_BTH);
-
-				RenderLightShadingPass();
-
-				RenderFINAL();
-
-				gSwapChain->Present(0, 0);	//Växla front- och back-buffer
-			}
-		}
-
-		gVertexBuffer_Floor->Release();		//LÄGG TILL FLER OBJ:S HÄR
-		gVertexBuffer_Light->Release();
-		gVertexBuffer_Box->Release();
-		gVertexBuffer_Boll->Release();
-		gVertexBuffer_Drake->Release();
-
-		MTLBuffer_Box->Release();		//LÄGG TILL FLER MTL:ER HÄR
-		gConstantBuffer_Boll->Release();
-		MTLBuffer_Drake->Release();
-
-		//-----
-		gVertexLayoutFinal->Release();
-		gVertexLayoutFirstPass->Release();
-		
-		gVertexShaderFirstPass->Release();
-		gVertexShaderLightShadingPass->Release();
-		gVertexShaderFinal->Release();
-
-		gGeometryShaderFirstPass->Release();
-
-		gPixelShaderFirstPass->Release();
-		gPixelShaderLightShadingPass->Release();
-		gPixelShaderFinal->Release();
-
-		//-----
-
-		gBackbufferRTV->Release();
-		gSwapChain->Release();
-		gDevice->Release();
-		gDeviceContext->Release();
-		DestroyWindow(wndHandle);
-	}
-
-	return (int) msg.wParam;
 }
 
 //-----
