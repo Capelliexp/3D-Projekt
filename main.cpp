@@ -669,6 +669,8 @@ void Render_pre(){
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[2], clearColor);
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[3], clearColor);
 
+	gDeviceContext->ClearRenderTargetView(gLightShadingPassRTV, clearColor);
+
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
@@ -681,7 +683,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
-	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView /*nullptr*/);	//gFirstPassRTV is an array [4]
+	gDeviceContext->OMSetRenderTargets(4, &gBackbufferRTV, nullptr);	/*gDepthStencilView*//*nullptr*///gFirstPassRTV is an array [4]
 
 	//--------------------
 
@@ -710,14 +712,17 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 void RenderLightShadingPass(){
 
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);
+
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);	//kan byta till LIST nen då krävs 6 drawcalls
 
 	gDeviceContext->IASetInputLayout(NULL);
 
-	//gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
-	gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//används för test
+	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
+	//gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//används för test
 
 	//--------------------
 
@@ -812,7 +817,7 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 
 				RenderLightShadingPass();
 
-				//RenderFINAL();
+				RenderFINAL();
 
 				gSwapChain->Present(0, 0);	//Växla front- och back-buffer
 			}

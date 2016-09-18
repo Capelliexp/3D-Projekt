@@ -8,5 +8,7 @@ struct VS_OUT {
 
 float4 PS_main(VS_OUT input) : SV_Target{
 
-	return float4(255, 0, 0, 1);
+	float3 color = LightShadingTexture.Sample(sampAni, input.TexCoord).rgb;
+
+	return float4(color, 1);
 }
