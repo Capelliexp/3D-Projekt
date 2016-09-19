@@ -1,3 +1,6 @@
 1. fixat så hela deferred rendering fungerar (renderar, depth fungerar ej)
+	A. Depth fungerar, ändrade SampleDesc
 2. Ändrar FragmentLightShadingPass, vad är SpotlightAngles? (tror det är "bredden" på strålen)
 3. vill få shading i FragmenLightShadingPass att fungera...
+	A. Alla texturer skickar rätt data (tror jag)
+	B. float3 diffuse =  (255, 255, 255) * color.rgb * nDotL; ÄR FEL

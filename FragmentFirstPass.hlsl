@@ -30,11 +30,11 @@ PSOutput PS_main1(in PSInput input) : SV_Target{
 	// Implementera objektets textur
 	float3 diffuseAlbedo = txDiffuse.Sample(sampAni, input.TexCoord).rgb;	//här borde Kd användas... eller?
 
-	float3 Normal = normalize(input.NormalWS.xyz);
-	Normal = (Normal + 1) / 2;
+	float3 normal = normalize(input.NormalWS.xyz);
+	normal = (normal + 1) / 2;
 
 	//Output our G-Buffer values
-	output.Normal = float4(Normal, 1.0f);
+	output.Normal = float4(normal, 1.0f);
 	output.DiffuseAlbedo = float4(diffuseAlbedo, 1.0f);
 	output.SpecularAlbedo = float4(Ks, Ns);
 	output.Position = float4(input.PositionWS, 1);
