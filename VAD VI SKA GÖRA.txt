@@ -1,13 +1,13 @@
 Mandatory:
 (klart)		“Perspective” camera
 (klart)		Texturs
-		Ambient, diffuse AND specular lighting in your shaders
+(klart)		Ambient, diffuse AND specular lighting in your shaders
 (klart)		Use “w-a-s-d” for moving and mouse camera control
 (klart)		Vertex and Fragment shaders
 
 
 Core techniques:
-		Deferred Rendering
+(klart)		Deferred Rendering
 
 
 Geometry:

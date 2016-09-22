@@ -87,7 +87,7 @@ ID3D11ShaderResourceView* gFirstPass_Position;
 
 ID3D11Buffer* MatriserBuffer = nullptr;
 ID3D11Buffer* CamPosBuffer = nullptr;
-ID3D11Buffer* LightBuffer_1[1];
+ID3D11Buffer* LightBuffer_1 = nullptr;
 
 //-----------------------	Shaders
 
@@ -164,11 +164,8 @@ struct LightStruct{		//multiple of 16!
 	XMVECTOR PosLight;			//16-byte
 	XMVECTOR ViewLight;			//16-byte
 	XMVECTOR SpotlightAngles;	//16-byte
-	unsigned short LightType;	//2-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
-	short shit1;				//2-byte
-	float shit2;				//4-byte
-	float shit3;				//4-byte
-	float shit4;				//4-byte
+	XMVECTOR LightColor;		//16-byte
+	unsigned int LightType;		//4-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
 };
 
 LightStruct LightObject1;
@@ -226,18 +223,19 @@ void CreateLightObjects() {
 	//---
 
 	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ 2.5,3.0,2.5 }, { 2.5,0,2.5 }, { 0,1,0 });		//pos, look, up
-	LightObject1.LightRange = {10.0, 0.0, 0.0};
-	LightObject1.PosLight = { 2.5, 3.0, 2.5 };
-	LightObject1.ViewLight = { 2.5, 0.0, 2.5 };
-	LightObject1.SpotlightAngles = { 45.0, 45.0 };
-	LightObject1.LightType = 2;
+	LightObject1.LightRange = {8.0, 0.0, 0.0, 0.0};			//1
+	LightObject1.PosLight = { 2.5, 3.0, 2.5 , 0.0};				//3	//behövs ej, finns i matrisen
+	LightObject1.ViewLight = { 2.5, 0.0, 2.5, 0.0 };			//2	//behövs ej, finns i matrisen
+	LightObject1.SpotlightAngles = { 0.2f, 0.8f, 0.0, 0.0 };	//2
+	LightObject1.LightColor = { 1.0, 1.0 , 1.0, 0.0 };			//3
+	LightObject1.LightType = 1;									//1	//1 = pointlight, 2 = directional light, 3 = spotlight
 
 	D3D11_SUBRESOURCE_DATA Light1;
 	Light1.pSysMem = &LightObject1;
 	Light1.SysMemPitch = 0;
 	Light1.SysMemSlicePitch = 0;
 
-	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1[0]);
+	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1);
 
 	//---
 }
@@ -290,7 +288,7 @@ void CreateDepth() {
 	descDepth.SampleDesc.Count = 1;  // SAME AS BACK BUFFER, OR IT WILL BLOW!
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;    // IMPORTANT
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;    // IMPORTANT
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;                         // the window to be used
 
@@ -300,7 +298,7 @@ void CreateDepth() {
 	hr = gDevice->CreateDepthStencilView(depthTex1, nullptr, &gDepthStencilView);
 	
 	// release the texture, because having a reference to the View of it is enough!
-	depthTex1->Release();
+	//depthTex1->Release();
 
 	// Tell DX that we have a Back Buffer AND a Depth Buffer.
 	// If we had a Stencil buffer, it would be in the same gDepthStencilView, "sharing" the texture...
@@ -420,7 +418,7 @@ void CreateTexturesAndViews(){
 	bthTexDesc.Height = BTH_IMAGE_HEIGHT;
 	bthTexDesc.MipLevels = bthTexDesc.ArraySize = 1;
 	bthTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	bthTexDesc.SampleDesc.Count = 1;	//4?
+	bthTexDesc.SampleDesc.Count = 1;
 	bthTexDesc.SampleDesc.Quality = 0;
 	bthTexDesc.Usage = D3D11_USAGE_DEFAULT;
 	bthTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -676,6 +674,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		SetViewport();
 		SetScissor();
 		CreateMatrixObjects();
+		CreateLightObjects();
 		CreateOtherBuffers();
 		CreateRastarizer();
 		CreateDepth();
@@ -824,7 +823,7 @@ void RenderLightShadingPass(){
 
 	gDeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
 
-	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1[0]);	//ljus
+	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//ljus
 	gDeviceContext->PSSetConstantBuffers(1, 1, &CamPosBuffer);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);
@@ -915,7 +914,7 @@ HRESULT CreateDirect3DContext(HWND wndHandle){
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;		// use 32-bit color
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;		// how swap chain is to be used
 	scd.OutputWindow = wndHandle;							// the window to be used
-	scd.SampleDesc.Count = 4;								// how many multisamples
+	scd.SampleDesc.Count = 1;								// how many multisamples
 	scd.Windowed = TRUE;									// windowed/full-screen mode
 
 	// create a device, device context and swap chain using the information in the scd struct
