@@ -5,6 +5,8 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include <Windows.h>
+#include <string>
 
 #include "bth_image.h"
 #include "PlayerControl.h"
@@ -19,6 +21,8 @@
 #include "DirectXTK/WICTextureLoader.h"
 
 #include <Objbase.h>
+
+#define _T(a)  L ## a
 
 using namespace DirectX;
 
@@ -43,7 +47,7 @@ using namespace DirectX;
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ff476220(v=vs.85).aspx		Subresource
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ff476253(v=vs.85).aspx		2D-texture struct
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ff476521(v=vs.85).aspx		CreateTexture2D()
-//C:\Users\Capelli\Dropbox\Skola\Programmering\3D Föreläsningar\Powerpoints\7 - texturing.pdf
+//C:\Users\Capelli\Dropbox\Skola\Programmering\3D Föreläsningar\Powerpoints\7			texturing.pdf
 
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ff476904(v=vs.85).aspx	Hur man läser in textur
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ff476286(v=vs.85).aspx	CreateTextureFromFile()
@@ -82,6 +86,8 @@ ID3D11ShaderResourceView* gFirstPass_Normal;
 ID3D11ShaderResourceView* gFirstPass_DiffuseAlbedo;
 ID3D11ShaderResourceView* gFirstPass_SpecularAlbedo;
 ID3D11ShaderResourceView* gFirstPass_Position;
+
+ID3D11ShaderResourceView* gShadowView;
 
 //-----------------------	Buffers
 
@@ -150,6 +156,7 @@ void Update();
 void Keyboard();
 void Mouse();
 void Clock();
+void checkErrorBlob(HRESULT hr, std::string pos);
 
 void Render_pre();
 void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11ShaderResourceView* texure);
@@ -278,31 +285,41 @@ void CreateRastarizer() {
 void CreateDepth() {
 	// resource texture
 	ID3D11Texture2D* depthTex1 = nullptr;
+
 	// Create depth stencil texture
 	D3D11_TEXTURE2D_DESC descDepth;
 	descDepth.Width = (INT)ViewPortWidth;
 	descDepth.Height = (INT)ViewPortHeight;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
 	descDepth.SampleDesc.Count = 1;  // SAME AS BACK BUFFER, OR IT WILL BLOW!
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;    // IMPORTANT
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;	//D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;                         // the window to be used
+	
+	// Create the depth stencil view desc
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0;
 
+	//create shader resource view desc
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = descDepth.MipLevels;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+
+	// Create texture, depthStencilView and shaderResourceView
 	hr = gDevice->CreateTexture2D(&descDepth, NULL, &depthTex1);
-
-	// Create the depth stencil view (view of the texture resource)
-	hr = gDevice->CreateDepthStencilView(depthTex1, nullptr, &gDepthStencilView);
+	hr = gDevice->CreateDepthStencilView(depthTex1, &descDSV, &gDepthStencilView);
+	hr = gDevice->CreateShaderResourceView(depthTex1, &srvDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
 	
 	// release the texture, because having a reference to the View of it is enough!
-	//depthTex1->Release();
-
-	// Tell DX that we have a Back Buffer AND a Depth Buffer.
-	// If we had a Stencil buffer, it would be in the same gDepthStencilView, "sharing" the texture...
-	//gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, gDepthStencilView);	//OBS! denna är flyttad, ligger nu i renderfunktionerna eftersom de måste bytas mellan passes.
+	depthTex1->Release();
 }
 
 void CreateShaders(){
@@ -775,7 +792,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
-	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView);	/*gDepthStencilView*//*nullptr*///gFirstPassRTV is an array [4]
+	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView);
 
 	//--------------------
 
@@ -1046,4 +1063,19 @@ void Mouse(){
 		LastFrameESC = false;
 	}
 
+}
+
+void checkErrorBlob(HRESULT hr, std::string pos) {
+	if (hr == E_INVALIDARG) {
+		MessageBox(NULL,L"Blob ERROR: An invalid parameter was passed to the returning function",L"Error", MB_OK);
+		return;
+	}
+	else if (hr == E_OUTOFMEMORY) {
+		MessageBox(NULL, L"Blob ERROR: Out of memory ", L"Error", MB_OK);
+		return;
+	}
+	else if (FAILED(hr)) {
+		MessageBox(NULL, L"Blob ERROR: An unknown error occured ", L"Error", MB_OK);
+		return;
+	}
 }

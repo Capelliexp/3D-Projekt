@@ -1,22 +1,22 @@
 Mandatory:
-(klart)		“Perspective” camera
-(klart)		Texturs
-(klart)		Ambient, diffuse AND specular lighting in your shaders
-(klart)		Use “w-a-s-d” for moving and mouse camera control
-(klart)		Vertex and Fragment shaders
+(done)		“Perspective” camera
+(done)		Texturs
+(done)		Ambient, diffuse AND specular lighting in your shaders
+(done)		Use “w-a-s-d” for moving and mouse camera control
+(done)		Vertex and Fragment shaders
 
 
 Core techniques:
-(klart)		Deferred Rendering
+(done)		Deferred Rendering
 
 
 Geometry:
-(klart)		Parsing and rendering an existing model format
-		Level of Detail using Tessellation /// Displacement mapping using Tessellation hardware
+(done)		Parsing and rendering an existing model format
+(skip)		Level of Detail using Tessellation /// Displacement mapping using Tessellation hardware
 
 
 Texturing and Lighting:
-		Screen Space Ambient Occlusion
+(skip)		Screen Space Ambient Occlusion
 
 
 Projection Techniques:
@@ -24,10 +24,10 @@ Projection Techniques:
 
 
 Acceleration Techniques:
-(klart)		Back face culling using Geometry Shader
-		Occlusion culling /// frustum culling
+(done)		Back face culling using Geometry Shader
+(skip)		Occlusion culling /// frustum culling
 
 
 Other techniques:
-		Glow-effect
-		Make a small game in your application
+		Glow-effect using compute shader
+(skip)		Make a small game in your application
