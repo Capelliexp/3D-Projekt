@@ -24,7 +24,7 @@ cbuffer Albido:register(b0){
 	int illum;
 };
 
-PSOutput PS_main1(in PSInput input) : SV_Target{
+PSOutput PS_main(in PSInput input) : SV_Target{
 	PSOutput output;
 
 	// Implementera objektets textur

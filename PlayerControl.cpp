@@ -8,7 +8,7 @@
 //https://msdn.microsoft.com/en-us/library/windows/desktop/gg153550(v=vs.85).aspx
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms648393(v=vs.85).aspx
 
-float movementSpeed = 10.0f;
+float movementSpeed = 7.0f;
 float cameraSpeed = 0.002f;
 
 void Forward(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
@@ -29,7 +29,7 @@ void Forward(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, {0, 1, 0});
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, {0, 1, 0});
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 }
 
@@ -52,7 +52,7 @@ void Left(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 }
 
@@ -74,7 +74,7 @@ void Backwards(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 
 }
@@ -98,7 +98,7 @@ void Right(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos){
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 }
 
@@ -115,7 +115,7 @@ void Jump(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos) {
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 }
 
@@ -132,7 +132,7 @@ void Down(__int64 FPS, XMMATRIX* ViewMatrix, XMVECTOR* CurrentCamPos) {
 
 	*CurrentCamPos = newCamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ newCamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(newCamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 }
 
@@ -167,7 +167,7 @@ void mouseMovement(POINT mouseInfoNew, XMMATRIX* ViewMatrix){
 
 	XMVECTOR newCamLook = (XMVectorSet(View4x4._31, View4x4._32 + cameraSpeed*yMovement, View4x4._33, 0)) + CamPos;
 
-	*ViewMatrix = XMMatrixLookAtLH({ CamPos }, { newCamLook }, { 0, 1, 0 });
+	*ViewMatrix = XMMatrixLookAtLH(CamPos, newCamLook, { 0, 1, 0 });
 	*ViewMatrix = *ViewMatrix * RotationX;
 	*ViewMatrix = XMMatrixTranspose(*ViewMatrix);
 

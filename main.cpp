@@ -87,7 +87,7 @@ ID3D11ShaderResourceView* gFirstPass_DiffuseAlbedo;
 ID3D11ShaderResourceView* gFirstPass_SpecularAlbedo;
 ID3D11ShaderResourceView* gFirstPass_Position;
 
-ID3D11ShaderResourceView* gShadowView;
+ID3D11ShaderResourceView* gShadowView;	//för shadow mapping
 
 //-----------------------	Buffers
 
@@ -103,7 +103,6 @@ ID3D11InputLayout* gVertexLayoutLightShadingPass = nullptr;
 ID3D11VertexShader* gVertexShaderFinal = nullptr;
 ID3D11VertexShader* gVertexShaderFirstPass = nullptr;
 ID3D11VertexShader* gVertexShaderLightShadingPass = nullptr;
-ID3D11VertexShader* gVertexShaderShadow = nullptr;
 
 ID3D11GeometryShader* gGeometryShaderFirstPass = nullptr;
 ID3D11GeometryShader* gGeometryShaderBasic = nullptr;
@@ -112,7 +111,6 @@ ID3D11GeometryShader* gGeometryShaderBackface = nullptr;
 ID3D11PixelShader* gPixelShaderFinal = nullptr;
 ID3D11PixelShader* gPixelShaderFirstPass = nullptr;
 ID3D11PixelShader* gPixelShaderLightShadingPass = nullptr;
-ID3D11PixelShader* gPixelShaderShadow = nullptr;
 
 //-----------------------	RTV, DSV och SRV
 
@@ -233,7 +231,7 @@ void CreateLightObjects() {
 	LightObject1.LightRange = {8.0, 0.0, 0.0, 0.0};			//1
 	LightObject1.PosLight = { 2.5, 3.0, 2.5 , 0.0};				//3	//behövs ej, finns i matrisen
 	LightObject1.ViewLight = { 2.5, 0.0, 2.5, 0.0 };			//2	//behövs ej, finns i matrisen
-	LightObject1.SpotlightAngles = { 0.2f, 0.8f, 0.0, 0.0 };	//2
+	LightObject1.SpotlightAngles = { 0.2f, 0.8f, 0.0f, 0.0f };	//2
 	LightObject1.LightColor = { 1.0, 1.0 , 1.0, 0.0 };			//3
 	LightObject1.LightType = 1;									//1	//1 = pointlight, 2 = directional light, 3 = spotlight
 
@@ -292,31 +290,28 @@ void CreateDepth() {
 	descDepth.Height = (INT)ViewPortHeight;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
-	descDepth.SampleDesc.Count = 1;  // SAME AS BACK BUFFER, OR IT WILL BLOW!
+	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
+	descDepth.SampleDesc.Count = 1;
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;	//D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL/* | D3D11_BIND_SHADER_RESOURCE*/;	//D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;                         // the window to be used
-	
-	// Create the depth stencil view desc
-	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
-	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	descDSV.Texture2D.MipSlice = 0;
 
-	//create shader resource view desc
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = descDepth.MipLevels;
-	srvDesc.Texture2D.MostDetailedMip = 0;
+	//D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	//descDSV.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D32_FLOAT / DXGI_FORMAT_D24_UNORM_S8_UINT
+	//descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	//descDSV.Texture2D.MipSlice = 0;
 
-	// Create texture, depthStencilView and shaderResourceView
+	//D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	//srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;	//DXGI_FORMAT_R32_FLOAT / DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+	//srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	//srvDesc.Texture2D.MipLevels = descDepth.MipLevels;
+	//srvDesc.Texture2D.MostDetailedMip = 0;
+
 	hr = gDevice->CreateTexture2D(&descDepth, NULL, &depthTex1);
-	hr = gDevice->CreateDepthStencilView(depthTex1, &descDSV, &gDepthStencilView);
-	hr = gDevice->CreateShaderResourceView(depthTex1, &srvDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
+	hr = gDevice->CreateDepthStencilView(depthTex1, /*&descDSV*/ NULL, &gDepthStencilView);
+	//hr = gDevice->CreateShaderResourceView(depthTex1, &srvDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
 	
 	// release the texture, because having a reference to the View of it is enough!
 	depthTex1->Release();
@@ -337,7 +332,7 @@ void CreateShaders(){
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	gDevice->CreateInputLayout(inputDesc3, ARRAYSIZE(inputDesc3), pVS3->GetBufferPointer(), pVS3->GetBufferSize(), &gVertexLayoutFirstPass);
-	// we do not need anymore this COM object, so we release it.
+	// we do not need this COM object anymore, so we release it.
 	pVS3->Release();
 
 	//-------------------------------------------------------------------------------------------------------------------------------
@@ -365,9 +360,6 @@ void CreateShaders(){
 	gDevice->CreateVertexShader(pVS1->GetBufferPointer(), pVS1->GetBufferSize(), nullptr, &gVertexShaderFinal);
 	
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
-		/*{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },*/
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_UINT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS1->GetBufferPointer(), pVS1->GetBufferSize(), &gVertexLayoutFinal);
@@ -396,7 +388,7 @@ void CreateShaders(){
 
 	//CREATE PIXEL SHADER FOR FIRST PASS
 	ID3DBlob* pPS3 = nullptr;
-	D3DCompileFromFile(L"FragmentFirstPass.hlsl", nullptr, nullptr, "PS_main1", "ps_4_0", 0, 0, &pPS3, nullptr);
+	D3DCompileFromFile(L"FragmentFirstPass.hlsl", nullptr, nullptr, "PS_main", "ps_4_0", 0, 0, &pPS3, nullptr);
 
 	gDevice->CreatePixelShader(pPS3->GetBufferPointer(), pPS3->GetBufferSize(), nullptr, &gPixelShaderFirstPass);
 

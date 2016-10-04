@@ -25,9 +25,6 @@
     <Filter Include="Source Files\Shaders\2 LightShadingPass">
       <UniqueIdentifier>{09e22e31-8ebe-4e11-b468-f083b248538c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\3 ShadowShaders">
-      <UniqueIdentifier>{059a338e-e052-42f5-87fc-4830391f3784}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Shaders\4 FinalPass">
       <UniqueIdentifier>{1a7272bb-e178-463f-a367-582a89d7ba71}</UniqueIdentifier>
     </Filter>
@@ -53,12 +50,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="ShadowFragment.hlsl">
-      <Filter>Source Files\Shaders\3 ShadowShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="ShadowVertex.hlsl">
-      <Filter>Source Files\Shaders\3 ShadowShaders</Filter>
-    </FxCompile>
     <FxCompile Include="Fragment.hlsl">
       <Filter>Source Files\Shaders\4 FinalPass</Filter>
     </FxCompile>
