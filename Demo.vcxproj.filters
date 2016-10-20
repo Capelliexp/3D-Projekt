@@ -22,11 +22,14 @@
     <Filter Include="Source Files\Shaders\1 FirstPass">
       <UniqueIdentifier>{1fd6ef9a-2284-4c9a-a3d9-08f2452ee229}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\2 LightShadingPass">
-      <UniqueIdentifier>{09e22e31-8ebe-4e11-b468-f083b248538c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Shaders\4 FinalPass">
       <UniqueIdentifier>{1a7272bb-e178-463f-a367-582a89d7ba71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\3 LightShadingPass">
+      <UniqueIdentifier>{09e22e31-8ebe-4e11-b468-f083b248538c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\2 ShadowMappingPass">
+      <UniqueIdentifier>{09e410d3-5b2e-4fd0-a1f5-f7da8246b544}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,9 +48,6 @@
     <ClCompile Include="MTLReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowMapping.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Fragment.hlsl">
@@ -63,13 +63,16 @@
       <Filter>Source Files\Shaders\1 FirstPass</Filter>
     </FxCompile>
     <FxCompile Include="VertexLightShadingPass.hlsl">
-      <Filter>Source Files\Shaders\2 LightShadingPass</Filter>
+      <Filter>Source Files\Shaders\3 LightShadingPass</Filter>
     </FxCompile>
     <FxCompile Include="FragmentLightShadingPass.hlsl">
-      <Filter>Source Files\Shaders\2 LightShadingPass</Filter>
+      <Filter>Source Files\Shaders\3 LightShadingPass</Filter>
     </FxCompile>
     <FxCompile Include="GeometryFirstPass.hlsl">
       <Filter>Source Files\Shaders\1 FirstPass</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShadowMapping.hlsl">
+      <Filter>Source Files\Shaders\2 ShadowMappingPass</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -140,9 +143,6 @@
       <Filter>DirectXTK</Filter>
     </ClInclude>
     <ClInclude Include="MTLReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowMapping.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,10 +2,12 @@ Texture2D NormalTexture			: register(t0);
 Texture2D DiffuseAlbedoTexture	: register(t1);
 Texture2D SpecularAlbedoTexture : register(t2);
 Texture2D PositionTexture		: register(t3);
+Texture2D ShadowMap				: register(t4);	//shadow map
 SamplerState sampAni;
 
 cbuffer light1:register(b0) {
 	float4x4 ViewMatrixLight;
+	float4x4 ProjectionMatrixLight;
 	float4 LightRange;		//1 variable
 	float4 PosLight;		//3 variables
 	float4 ViewLight;		//3 variables
@@ -74,6 +76,7 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 	float3 normal = NormalTexture.Sample(sampAni, input.TexCoord).xyz;
 		normal = (normal - 0.5) * 2;		//remove for demonstration purpose
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
+	float3 shadowMap = ShadowMap.Sample(sampAni, input.TexCoord).rgb;
 		//position = normalize(position);	//add for demonstration purposes
 
 	float3 light1 = Calclighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);

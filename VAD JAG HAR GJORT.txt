@@ -12,3 +12,6 @@
 	B. något är fel med depthTex1, är nullptr trotts CreateTexture2D()
 		a. CreateDepthStencilView(x, NULL, y) måste ha null, annars fail
 		b. D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE gör så CreateTexture2D() misslyckas
+	C. löste problement, något med format eller Alfons gamla kod
+	D. ska nu fixa HLSL-kod
+	E. fixa VetexShadowMapping.hlsl

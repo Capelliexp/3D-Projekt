@@ -99,9 +99,11 @@ ID3D11Buffer* LightBuffer_1 = nullptr;
 
 ID3D11InputLayout* gVertexLayoutFinal = nullptr;
 ID3D11InputLayout* gVertexLayoutFirstPass = nullptr;
+ID3D11InputLayout* gVertexLayoutShadowMapping = nullptr;
 ID3D11InputLayout* gVertexLayoutLightShadingPass = nullptr;
 ID3D11VertexShader* gVertexShaderFinal = nullptr;
 ID3D11VertexShader* gVertexShaderFirstPass = nullptr;
+ID3D11VertexShader* gVertexShaderShadowMapping = nullptr;
 ID3D11VertexShader* gVertexShaderLightShadingPass = nullptr;
 
 ID3D11GeometryShader* gGeometryShaderFirstPass = nullptr;
@@ -127,7 +129,8 @@ ID3D11Texture2D* LightShadingTex;
 
 //-----------------------
 
-ID3D11RasterizerState* RastState;	//till rasterizer
+ID3D11RasterizerState* RastState = nullptr;	//till rasterizer
+ID3D11DepthStencilState* pDSState = nullptr;
 
 LARGE_INTEGER TotalFrames = { 0 };
 __int64 FPS = { 0 };
@@ -154,23 +157,25 @@ void Update();
 void Keyboard();
 void Mouse();
 void Clock();
-void checkErrorBlob(HRESULT hr, std::string pos);
+void checkErrorBlob(HRESULT hr);
 
 void Render_pre();
 void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11ShaderResourceView* texure);
+void RenderShadowMapping(ID3D11Buffer* OBJ, int draws);
 void RenderLightShadingPass();
 void RenderFINAL();
 
 //-----------------------	Light-structen
 
 struct LightStruct{		//multiple of 16!
-	XMMATRIX ViewMatrixLight;	//64-byte
-	XMVECTOR LightRange;		//16-byte
-	XMVECTOR PosLight;			//16-byte
-	XMVECTOR ViewLight;			//16-byte
-	XMVECTOR SpotlightAngles;	//16-byte
-	XMVECTOR LightColor;		//16-byte
-	unsigned int LightType;		//4-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
+	XMMATRIX ViewMatrixLight;		//64-byte
+	XMMATRIX ProjectionMatrixLight;	//64-byte
+	XMVECTOR LightRange;			//16-byte
+	XMVECTOR PosLight;				//16-byte
+	XMVECTOR ViewLight;				//16-byte
+	XMVECTOR SpotlightAngles;		//16-byte
+	XMVECTOR LightColor;			//16-byte
+	unsigned int LightType;			//4-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
 };
 
 LightStruct LightObject1;
@@ -228,6 +233,11 @@ void CreateLightObjects() {
 	//---
 
 	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ 2.5,3.0,2.5 }, { 2.5,0,2.5 }, { 0,1,0 });		//pos, look, up
+	LightObject1.ViewMatrixLight = XMMatrixTranspose(LightObject1.ViewMatrixLight);
+
+	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
+	LightObject1.ProjectionMatrixLight = XMMatrixTranspose(LightObject1.ProjectionMatrixLight);
+
 	LightObject1.LightRange = {8.0, 0.0, 0.0, 0.0};			//1
 	LightObject1.PosLight = { 2.5, 3.0, 2.5 , 0.0};				//3	//behövs ej, finns i matrisen
 	LightObject1.ViewLight = { 2.5, 0.0, 2.5, 0.0 };			//2	//behövs ej, finns i matrisen
@@ -290,32 +300,70 @@ void CreateDepth() {
 	descDepth.Height = (INT)ViewPortHeight;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
+	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
 	descDepth.SampleDesc.Count = 1;
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL/* | D3D11_BIND_SHADER_RESOURCE*/;	//D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;                         // the window to be used
 
 	//D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-	//descDSV.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D32_FLOAT / DXGI_FORMAT_D24_UNORM_S8_UINT
+	//descDSV.Format = descDepth.Format;	//DXGI_FORMAT_D32_ FLOAT / DXGI_FORMAT_D24_UNORM_S8_UINT
 	//descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	//descDSV.Texture2D.MipSlice = 0;
+	//descDSV.Flags = 0;
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	ZeroMemory(&descDSV, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0;
+	descDSV.Flags = 0;
 
 	//D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	//srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;	//DXGI_FORMAT_R32_FLOAT / DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+	//srvDesc.Format = descDepth.Format;	//DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R32_FLOAT / DXGI_FORMAT_R24_UNORM_X8_TYPELESS
 	//srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	//srvDesc.Texture2D.MipLevels = descDepth.MipLevels;
 	//srvDesc.Texture2D.MostDetailedMip = 0;
 
+	D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
+	ZeroMemory(&srDesc, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+	srDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srDesc.Texture2D.MostDetailedMip = 0;
+	srDesc.Texture2D.MipLevels = 1;
+
 	hr = gDevice->CreateTexture2D(&descDepth, NULL, &depthTex1);
-	hr = gDevice->CreateDepthStencilView(depthTex1, /*&descDSV*/ NULL, &gDepthStencilView);
-	//hr = gDevice->CreateShaderResourceView(depthTex1, &srvDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
-	
-	// release the texture, because having a reference to the View of it is enough!
+	checkErrorBlob(hr);	//kollar om CreateTexture2D() returnerar ett error
+	hr = gDevice->CreateDepthStencilView(depthTex1, &descDSV, &gDepthStencilView);
+	hr = gDevice->CreateShaderResourceView(depthTex1, &srDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
+
 	depthTex1->Release();
 }
+
+//void CreateDepthStencilState(){
+//	D3D11_DEPTH_STENCIL_DESC dsDesc;
+//	dsDesc.DepthEnable = true;
+//	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+//	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+//	dsDesc.StencilEnable = true;
+//	dsDesc.StencilReadMask = 0xFF;
+//	dsDesc.StencilWriteMask = 0xFF;
+//	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+//	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+//	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+//
+//	hr = gDevice->CreateDepthStencilState(&dsDesc, &pDSState);
+//
+//	//Bind the Depth-Stencil state
+//	//gDeviceContext->OMSetDepthStencilState(pDSState, 1);	//borde göras per rendering pass ???
+//}
 
 void CreateShaders(){
 
@@ -334,6 +382,24 @@ void CreateShaders(){
 	gDevice->CreateInputLayout(inputDesc3, ARRAYSIZE(inputDesc3), pVS3->GetBufferPointer(), pVS3->GetBufferSize(), &gVertexLayoutFirstPass);
 	// we do not need this COM object anymore, so we release it.
 	pVS3->Release();
+
+	//-------------------------------------------------------------------------------------------------------------------------------
+
+	//CREATE VERTEX SHADER FOR SHADOW MAPPING
+	ID3DBlob* pVS5 = nullptr;
+	D3DCompileFromFile(L"VertexShadowMapping.hlsl", nullptr, nullptr, "VS_main", "vs_4_0", 0, 0, &pVS5, nullptr);
+
+	gDevice->CreateVertexShader(pVS5->GetBufferPointer(), pVS5->GetBufferSize(), nullptr, &gVertexShaderShadowMapping);
+
+	//create input layout (verified using vertex shader)
+	D3D11_INPUT_ELEMENT_DESC inputDesc5[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }/*,
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },*/
+	};
+	gDevice->CreateInputLayout(inputDesc5, ARRAYSIZE(inputDesc5), pVS5->GetBufferPointer(), pVS5->GetBufferSize(), &gVertexLayoutShadowMapping);
+	// we do not need this COM object anymore, so we release it.
+	pVS5->Release();
 
 	//-------------------------------------------------------------------------------------------------------------------------------
 
@@ -687,6 +753,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		CreateOtherBuffers();
 		CreateRastarizer();
 		CreateDepth();
+		//CreateDepthStencilState();
 		CreateShaders();
 		CreateTriangleData();
 		CreateTexturesAndViews();
@@ -716,6 +783,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
 				RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
 				RenderFirstPass(gVertexBuffer_Drake, MTLBuffer_Drake, 231288, gTextureView_BTH);
+
+				RenderShadowMapping(gVertexBuffer_Floor, 6);
+				RenderShadowMapping(gVertexBuffer_Light, 6);
+				RenderShadowMapping(gVertexBuffer_Box, 36);
+				RenderShadowMapping(gVertexBuffer_Boll, 2280);
+				RenderShadowMapping(gVertexBuffer_Drake, 231288);
 
 				RenderLightShadingPass();
 
@@ -785,6 +858,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
 
 	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView);
+	//gDeviceContext->OMSetDepthStencilState(NULL, 0);
 
 	//--------------------
 
@@ -805,6 +879,35 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->PSSetShaderResources(0, 1, &texure);
 	gDeviceContext->PSSetConstantBuffers(0, 1, &MTL);
+
+	//--------------------
+
+	gDeviceContext->Draw(draws, 0);
+}
+
+void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
+	UINT32 vertexSize = sizeof(OBJFormat);
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	gDeviceContext->IASetInputLayout(gVertexLayoutShadowMapping);
+
+	gDeviceContext->OMSetRenderTargets(0, nullptr, gDepthStencilView);
+
+	//--------------------
+
+	gDeviceContext->VSSetShader(gVertexShaderShadowMapping, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
+
+	//--------------------
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//what object we are drawing
+	gDeviceContext->VSSetConstantBuffers(0, 1, &MatriserBuffer);
+	gDeviceContext->VSSetConstantBuffers(0, 2, &LightBuffer_1);
 
 	//--------------------
 
@@ -835,10 +938,11 @@ void RenderLightShadingPass(){
 	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//ljus
 	gDeviceContext->PSSetConstantBuffers(1, 1, &CamPosBuffer);
 
-	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);
+	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);	//texturer från light shading pass
 	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
 	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
 	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
+	gDeviceContext->PSSetShaderResources(4, 1, &gLightShadingPassSRV);	//shadow mapping
 
 	//--------------------
 
@@ -1057,7 +1161,7 @@ void Mouse(){
 
 }
 
-void checkErrorBlob(HRESULT hr, std::string pos) {
+void checkErrorBlob(HRESULT hr) {
 	if (hr == E_INVALIDARG) {
 		MessageBox(NULL,L"Blob ERROR: An invalid parameter was passed to the returning function",L"Error", MB_OK);
 		return;
