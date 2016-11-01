@@ -26,8 +26,10 @@ cbuffer light1:register(b1) {
 VSOutput VS_main(in VSInput input) {
 	VSOutput output = (VSOutput)0;
 
-	//output ska vara i clip space
 	output.Pos = float4(input.Pos, 1);
+	output.Pos = mul(output.Pos, WorldMatrix);
+	output.Pos = mul(output.Pos, ViewMatrixLight);
+	output.Pos = mul(output.Pos, ProjectionMatrixLight);
 
 	return output;
 }

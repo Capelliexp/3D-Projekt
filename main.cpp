@@ -71,7 +71,10 @@ ID3D11Buffer* gVertexBuffer_Floor = nullptr;
 ID3D11Buffer* gVertexBuffer_Light = nullptr;
 ID3D11Buffer* gVertexBuffer_Box = nullptr;
 ID3D11Buffer* gVertexBuffer_Boll = nullptr;
-ID3D11Buffer* gVertexBuffer_Drake = nullptr;
+ID3D11Buffer* gVertexBuffer_Drake1 = nullptr;
+ID3D11Buffer* gVertexBuffer_Drake2 = nullptr;
+ID3D11Buffer* gVertexBuffer_Drake3 = nullptr;
+ID3D11Buffer* gVertexBuffer_Drake4 = nullptr;
 
 ID3D11Buffer* MTLBuffer_Box = nullptr;
 ID3D11Buffer* gConstantBuffer_Boll = nullptr;
@@ -222,6 +225,15 @@ void CreateMatrixObjects(){
 
 void CreateLightObjects() {
 
+	float LightRange = 10.0;
+	float PosLight[] = { 3.0, 6.0, 3.0 };
+	float ViewLight[] = { 0.0, 0.0, 0.0 };
+	float SpotlightAngles[] = { 0.2f, 0.8f };
+	float LightColor[] = { 1.0, 1.0, 1.0 };
+	float LightType = 1;
+
+	//---
+
 	D3D11_BUFFER_DESC LightBufferDesc;
 	memset(&LightBufferDesc, 0, sizeof(LightBufferDesc));
 	LightBufferDesc.ByteWidth = sizeof(LightObject1);
@@ -230,20 +242,12 @@ void CreateLightObjects() {
 	LightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	LightBufferDesc.MiscFlags = 0;
 
-	//---
-
-	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ 2.5,3.0,2.5 }, { 2.5,0,2.5 }, { 0,1,0 });		//pos, look, up
-	LightObject1.ViewMatrixLight = XMMatrixTranspose(LightObject1.ViewMatrixLight);
-
-	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
-	LightObject1.ProjectionMatrixLight = XMMatrixTranspose(LightObject1.ProjectionMatrixLight);
-
-	LightObject1.LightRange = {8.0, 0.0, 0.0, 0.0};			//1
-	LightObject1.PosLight = { 2.5, 3.0, 2.5 , 0.0};				//3	//behövs ej, finns i matrisen
-	LightObject1.ViewLight = { 2.5, 0.0, 2.5, 0.0 };			//2	//behövs ej, finns i matrisen
-	LightObject1.SpotlightAngles = { 0.2f, 0.8f, 0.0f, 0.0f };	//2
-	LightObject1.LightColor = { 1.0, 1.0 , 1.0, 0.0 };			//3
-	LightObject1.LightType = 1;									//1	//1 = pointlight, 2 = directional light, 3 = spotlight
+	LightObject1.LightRange =	{ LightRange, 0.0, 0.0, 0.0 };								//1
+	LightObject1.PosLight =		{ PosLight[0], PosLight[1], PosLight[2] , 0.0 };			//3	//behövs ej, finns i matrisen
+	LightObject1.ViewLight =	{ ViewLight[0], ViewLight[1], ViewLight[2], 0.0 };			//3	//behövs ej, finns i matrisen
+	LightObject1.SpotlightAngles =	{ SpotlightAngles[0], SpotlightAngles[1], 0.0f, 0.0f };	//2
+	LightObject1.LightColor =	{ LightColor[0], LightColor[1] , LightColor[2], 0.0 };		//3	rgb
+	LightObject1.LightType = LightType;														//1	//1 = pointlight, 2 = directional light, 3 = spotlight
 
 	D3D11_SUBRESOURCE_DATA Light1;
 	Light1.pSysMem = &LightObject1;
@@ -253,6 +257,13 @@ void CreateLightObjects() {
 	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1);
 
 	//---
+
+	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ PosLight[0], PosLight[1], PosLight[2] }, { ViewLight[0], ViewLight[1], ViewLight[2] }, { 0,1,0 });		//pos, look, up
+	LightObject1.ViewMatrixLight = XMMatrixTranspose(LightObject1.ViewMatrixLight);
+
+	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
+	LightObject1.ProjectionMatrixLight = XMMatrixTranspose(LightObject1.ProjectionMatrixLight);
+
 }
 
 void CreateOtherBuffers(){
@@ -604,31 +615,31 @@ void CreateTriangleData(){
 		0.0f, 1.0f, 0.0f,		//v5 norm
 	};
 
-	OBJFormat light[6] = {
-		2.4f, 3.1f, 2.7f,		//v0 pos	-	top/vänster	-	1
-		0.0f, 0.0f,				//v0 tex
-		0.0f, 0.0f, -1.0f,
+	//OBJFormat light[6] = {
+	//	2.4f, 3.1f, 2.7f,		//v0 pos	-	top/vänster	-	1
+	//	0.0f, 0.0f,				//v0 tex
+	//	0.0f, 0.0f, -1.0f,
 
-		2.6f, 2.9f, 2.7f,		//v1		-	bot/höger	-	2
-		1.0f, 1.0f,				//v1 tex
-		0.0f, 0.0f, -1.0f,
+	//	2.6f, 2.9f, 2.7f,		//v1		-	bot/höger	-	2
+	//	1.0f, 1.0f,				//v1 tex
+	//	0.0f, 0.0f, -1.0f,
 
-		2.4f, 2.9f, 2.7f,	 	//v2		-	bot/vänster	-	3
-		0.0f, 1.0f,				//v2 tex
-		0.0f, 0.0f, -1.0f,
+	//	2.4f, 2.9f, 2.7f,	 	//v2		-	bot/vänster	-	3
+	//	0.0f, 1.0f,				//v2 tex
+	//	0.0f, 0.0f, -1.0f,
 
-		2.4f, 3.1f, 2.7f,		//v3 pos	-	top/vänster	-	1
-		0.0f, 0.0f,				//v3 tex
-		0.0f, 0.0f, -1.0f,
+	//	2.4f, 3.1f, 2.7f,		//v3 pos	-	top/vänster	-	1
+	//	0.0f, 0.0f,				//v3 tex
+	//	0.0f, 0.0f, -1.0f,
 
-		2.6f, 3.1f, 2.7f,		//v4		-	top/höger	-	4
-		1.0f, 0.0f,				//v4 tex
-		0.0f, 0.0f, -1.0f,
+	//	2.6f, 3.1f, 2.7f,		//v4		-	top/höger	-	4
+	//	1.0f, 0.0f,				//v4 tex
+	//	0.0f, 0.0f, -1.0f,
 
-		2.6f, 2.9f, 2.7f,		//v5		-	bot/höger	-	2
-		1.0f, 1.0f,				//v5 tex
-		0.0f, 0.0f, -1.0f,
-	};
+	//	2.6f, 2.9f, 2.7f,		//v5		-	bot/höger	-	2
+	//	1.0f, 1.0f,				//v5 tex
+	//	0.0f, 0.0f, -1.0f,
+	//};
 
 	//-----------------------------------------------
 
@@ -666,9 +677,9 @@ void CreateTriangleData(){
 	FloorData.pSysMem = Floor;
 	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor);
 
-	D3D11_SUBRESOURCE_DATA LightData;
+	/*D3D11_SUBRESOURCE_DATA LightData;
 	LightData.pSysMem = light;
-	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &LightData, &gVertexBuffer_Light);
+	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &LightData, &gVertexBuffer_Light);*/
 
 	//-----------------------------------------------	Boll
 
@@ -692,12 +703,12 @@ void CreateTriangleData(){
 	BollData_MTL.pSysMem = BollAlbedo;
 	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &BollData_MTL, &gConstantBuffer_Boll);
 
-	//-----------------------------------------------	Dragon
+	//-----------------------------------------------	Dragon 1
 
-	OBJFormat* Drake = new OBJFormat[231288];
+	OBJFormat* Drake1 = new OBJFormat[231288];
 	MTLFormat* DrakeAlbedo = new MTLFormat[1];
 
-	readOBJ(Drake, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, 3.0f);
+	readOBJ(Drake1, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, 3.0f);
 	readMTL(DrakeAlbedo, "OBJs & Texturs/drake/Figurine Dragon N170112.mtl");
 
 	D3D11_BUFFER_DESC TriangleBufferDescDrake_OBJ;
@@ -706,13 +717,46 @@ void CreateTriangleData(){
 	TriangleBufferDescDrake_OBJ.Usage = D3D11_USAGE_DEFAULT;
 	TriangleBufferDescDrake_OBJ.ByteWidth = sizeof(OBJFormat) * 231288;
 
-	D3D11_SUBRESOURCE_DATA DrakeData;
-	DrakeData.pSysMem = Drake;
-	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData, &gVertexBuffer_Drake);
+	D3D11_SUBRESOURCE_DATA DrakeData1;
+	DrakeData1.pSysMem = Drake1;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData1, &gVertexBuffer_Drake1);
 
 	D3D11_SUBRESOURCE_DATA DrakeData_MTL;
 	DrakeData_MTL.pSysMem = DrakeAlbedo;
 	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &DrakeData_MTL, &MTLBuffer_Drake);
+
+	//-----------------------------------------------	Dragon 2
+
+	OBJFormat* Drake2 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo2 = new MTLFormat[1];
+
+	readOBJ(Drake2, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 3.0f, 0.7f, 0.0f);
+
+	D3D11_SUBRESOURCE_DATA DrakeData2;
+	DrakeData2.pSysMem = Drake2;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData2, &gVertexBuffer_Drake2);
+
+	//-----------------------------------------------	Dragon 3
+
+	OBJFormat* Drake3 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo3 = new MTLFormat[1];
+
+	readOBJ(Drake3, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, -3.0f);
+
+	D3D11_SUBRESOURCE_DATA DrakeData3;
+	DrakeData3.pSysMem = Drake3;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData3, &gVertexBuffer_Drake3);
+
+	//-----------------------------------------------	Dragon 4
+
+	OBJFormat* Drake4 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo4 = new MTLFormat[1];
+
+	readOBJ(Drake4, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, -3.0f, 0.7f, 0.0f);
+
+	D3D11_SUBRESOURCE_DATA DrakeData4;
+	DrakeData4.pSysMem = Drake4;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData4, &gVertexBuffer_Drake4);
 }
 
 void SetViewport(){
@@ -742,8 +786,9 @@ void SetScissor() {
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
 	MSG msg = { 0 };
 	HWND wndHandle = InitWindow(hInstance);	//Skapar fönstret
+	HWND wndHandle2 = InitWindow(hInstance);	//Skapar fönstret
 
-	if (wndHandle) {
+	if (wndHandle){
 		CreateDirect3DContext(wndHandle);	//Skapa och koppla SwapChain, Device och Device Context
 
 		SetViewport();
@@ -762,15 +807,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		SetCursorPos(960, 540);
 
-		while (WM_QUIT != msg.message)
-		{
-			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-			{
+		while (WM_QUIT != msg.message){
+			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)){
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-			else
-			{
+			else{
 				Clock();
 				Mouse();
 				Keyboard();
@@ -779,16 +821,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				Render_pre();
 
 				RenderFirstPass(gVertexBuffer_Floor, nullptr, 6, gTextureView_Box);
-				RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
+				//RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
 				RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
 				RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Drake, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Drake1, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
+
+				gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 				RenderShadowMapping(gVertexBuffer_Floor, 6);
-				RenderShadowMapping(gVertexBuffer_Light, 6);
+				//RenderShadowMapping(gVertexBuffer_Light, 6);
 				RenderShadowMapping(gVertexBuffer_Box, 36);
 				RenderShadowMapping(gVertexBuffer_Boll, 2280);
-				RenderShadowMapping(gVertexBuffer_Drake, 231288);
+				RenderShadowMapping(gVertexBuffer_Drake1, 231288);
+				RenderShadowMapping(gVertexBuffer_Drake2, 231288);
+				RenderShadowMapping(gVertexBuffer_Drake3, 231288);
+				RenderShadowMapping(gVertexBuffer_Drake4, 231288);
 
 				RenderLightShadingPass();
 
@@ -799,10 +849,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 
 		gVertexBuffer_Floor->Release();		//LÄGG TILL FLER OBJ:S HÄR
-		gVertexBuffer_Light->Release();
+		//gVertexBuffer_Light->Release();
 		gVertexBuffer_Box->Release();
 		gVertexBuffer_Boll->Release();
-		gVertexBuffer_Drake->Release();
+		gVertexBuffer_Drake1->Release();
+		gVertexBuffer_Drake2->Release();
+		gVertexBuffer_Drake3->Release();
+		gVertexBuffer_Drake4->Release();
 
 		MTLBuffer_Box->Release();		//LÄGG TILL FLER MTL:ER HÄR
 		gConstantBuffer_Boll->Release();
@@ -942,7 +995,7 @@ void RenderLightShadingPass(){
 	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
 	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
 	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
-	gDeviceContext->PSSetShaderResources(4, 1, &gLightShadingPassSRV);	//shadow mapping
+	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);	//shadow mapping
 
 	//--------------------
 
@@ -1137,7 +1190,6 @@ void Mouse(){
 		MouseMoveESC = true;
 		LastFrameESC = true;
 	}
-
 	else if ((GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == true && LastFrameESC == false) ||
 		(GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == false && LastFrameESC == true)) {			//E
 		MouseMoveESC = false;
@@ -1145,10 +1197,10 @@ void Mouse(){
 		SetCursorPos(960, 540);
 	}
 
-	if (MouseMoveESC == false)
-	{
+	if (MouseMoveESC == false){
 		GetCursorPos(&mouseInfoNew);
 		mouseMovement(mouseInfoNew, &MatrixObject.ViewMatrix);
+		//mouseMovement(mouseInfoNew, &LightObject1.ViewMatrixLight);	//flytta shadow map look pos
 		SetCursorPos(960, 540);
 	}
 	
