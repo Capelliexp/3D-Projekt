@@ -6,8 +6,8 @@ Texture2D ShadowMapTexture		: register(t4);	//shadow map
 SamplerState sampAni;
 
 cbuffer light1:register(b0) {
-	float4x4 ViewMatrixLight;
-	float4x4 ProjectionMatrixLight;
+	matrix ViewMatrixLight;
+	matrix ProjectionMatrixLight;
 	float4 LightRange;		//1 variable
 	float4 PosLight;		//3 variables
 	float4 ViewLight;		//3 variables
@@ -77,11 +77,13 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 		normal = (normal - 0.5) * 2;		//remove for demonstration purpose
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
 		//position = normalize(position);	//add for demonstration purposes
-	float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;	//OBS! endast röd
+	float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
+	//shadowMap.x = (shadowMap.x + 1.0f) / 2.0f;
+	//shadowMap.y = (shadowMap.y + 1.0f) / 2.0f;
+	//shadowMap.z = (shadowMap.z + 1.0f) / 2.0f;
 
 	float3 light1 = Calclighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);
 
-	return float4(light1, 1.0f);
-	//return float4(shadowMap, 1.0f);
+	//return float4(light1, 1.0f);
+	return float4(shadowMap, 1.0f);
 }
-

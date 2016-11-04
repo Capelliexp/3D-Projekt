@@ -15,3 +15,10 @@
 	C. löste problement, något med format eller Alfons gamla kod
 	D. ska nu fixa HLSL-kod
 	E. fixa VetexShadowMapping.hlsl
+		a. buffern med ViewLight och PerspectiveLight funkar inte?!?
+		b. Filip ditt pucko updatera dina jävla buffrar...
+
+
+
+X. Kolla varför programmet måste stoppas vid körning
+	A. Har tidigare stoppat vid CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor)
