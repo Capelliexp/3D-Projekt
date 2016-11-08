@@ -15,6 +15,7 @@ cbuffer float_four_matrix:register(b0) {
 cbuffer light1:register(b1) {
 	matrix ViewMatrixLight;
 	matrix ProjectionMatrixLight;
+	matrix ShadowMatrix;
 	float4 LightRange;		//1 variable
 	float4 PosLight;		//3 variables
 	float4 ViewLight;		//3 variables

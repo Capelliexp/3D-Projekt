@@ -174,6 +174,7 @@ void RenderFINAL();
 struct LightStruct{		//multiple of 16!
 	XMMATRIX ViewMatrixLight;		//64-byte
 	XMMATRIX ProjectionMatrixLight;	//64-byte
+	XMMATRIX ShadowMatrix;			//64-byte
 	XMVECTOR LightRange;			//16-byte
 	XMVECTOR PosLight;				//16-byte
 	XMVECTOR ViewLight;				//16-byte
@@ -224,6 +225,21 @@ void CreateMatrixObjects(){
 	gDevice->CreateBuffer(&MatrixBufferDesc, &WVPI, &MatriserBuffer);
 }
 
+void CreateShadowObjects(float* PosLight, float LightType) {
+	XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	float w;	//jag pallar inte...
+	if (LightType == 2) {
+		w = 0.0f;
+	}
+	else {
+		w = 1.0f;
+	}
+
+	LightObject1.ShadowMatrix = XMMatrixShadow(shadowPlane, { PosLight[0], PosLight[1], PosLight[2], w });
+
+}
+
 void CreateLightObjects() {
 
 	float LightRange = 10.0;
@@ -267,6 +283,7 @@ void CreateLightObjects() {
 
 	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1);
 
+	CreateShadowObjects(PosLight, LightType);
 }
 
 void CreateOtherBuffers(){
@@ -815,6 +832,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		SetViewport();
 		SetScissor();
 		CreateMatrixObjects();
+		//CreateShadowObjects();	//används i CreateLightObjects()
 		CreateLightObjects();
 		CreateOtherBuffers();
 		CreateRastarizer();

@@ -8,6 +8,7 @@ SamplerState sampAni;
 cbuffer light1:register(b0) {
 	matrix ViewMatrixLight;
 	matrix ProjectionMatrixLight;
+	matrix ShadowMatrix;
 	float4 LightRange;		//1 variable
 	float4 PosLight;		//3 variables
 	float4 ViewLight;		//3 variables
@@ -68,6 +69,20 @@ float3 Calclighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	return shading;
 }
 
+float readShadowMap(float3 eyeDir){
+	matrix cameraViewToWorldMatrix = ;
+	matrix cameraViewToProjectedLightSpace = ;
+
+	float4 projectedEyeDir = ;
+	projectedEyeDir = projectedEyeDir / projectedEyeDir.w;
+
+	float2 textureCoordinates = projectedEyeDir.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+
+	float3 depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;
+
+	return ((projectedEyeDir.z * 0.5) + 0.5) < depthValue;	//fel
+}
+
 float4 PS_main(in VS_OUT input) : SV_Target{
 
 	float3 color = DiffuseAlbedoTexture.Sample(sampAni, input.TexCoord).rgb;
@@ -77,13 +92,12 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 		normal = (normal - 0.5) * 2;		//remove for demonstration purpose
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
 		//position = normalize(position);	//add for demonstration purposes
-	float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
-	//shadowMap.x = (shadowMap.x + 1.0f) / 2.0f;
-	//shadowMap.y = (shadowMap.y + 1.0f) / 2.0f;
-	//shadowMap.z = (shadowMap.z + 1.0f) / 2.0f;
+
+	float3 eyeDir = position - CamPosition;
+	float shadowValue = readShadowMap(eyeDir);
 
 	float3 light1 = Calclighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);
 
-	//return float4(light1, 1.0f);
-	return float4(shadowMap, 1.0f);
+	return float4(light1, 1.0f);
+	//return float4(shadowMap, 1.0f);
 }
