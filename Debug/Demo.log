@@ -1,6 +1,6 @@
-﻿D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(73,35): error X3000: syntax error: unexpected token ';'
-D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(74,43): error X3000: syntax error: unexpected token ';'
-D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(76,27): error X3000: syntax error: unexpected token ';'
-D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(83,2-51): warning X3206: implicit truncation of vector type
+﻿D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(84,36-56): warning X3206: implicit truncation of vector type
+D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(46,2): warning X4000: use of potentially uninitialized variable (CalcLighting)
   
-  compilation failed; no code produced
+  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\FragmentLightShadingPass.cso
+  Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe
+  Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.pdb (Full PDB)

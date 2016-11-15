@@ -8,7 +8,6 @@ SamplerState sampAni;
 cbuffer light1:register(b0) {
 	matrix ViewMatrixLight;
 	matrix ProjectionMatrixLight;
-	matrix ShadowMatrix;
 	float4 LightRange;		//1 variable
 	float4 PosLight;		//3 variables
 	float4 ViewLight;		//3 variables
@@ -17,16 +16,27 @@ cbuffer light1:register(b0) {
 	uint LightType;			//1 variable
 };
 
-cbuffer CamPos:register(b1) {	//onödig - finns i ViewMatrixLight
+cbuffer CamPos:register(b1) {
 	float3 CamPosition;
 };
 
+cbuffer Shadow:register(b2) {
+	matrix InverseViewMatrix;
+	matrix InverseProjectionMatrix;
+};
+
+cbuffer Matrices:register(b3) {
+	matrix WorldMatrix;
+	matrix ViewMatrix;
+	matrix ProjectionMatrix;
+};
+
 struct VS_OUT {
-	float4 Position : SV_Position;	//position på pixel pga full screen quad
+	float4 PositionQuad : SV_Position;	//position på pixel pga full screen quad
 	float2 TexCoord : TexCoord;		//samma som ovan?
 };
 
-float3 Calclighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition) {
+float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition) {
 
 	float3 L;
 	float attenuation = 1;
@@ -56,7 +66,7 @@ float3 Calclighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 
 	float nDotL = dot(normal, L);	//(0.0, 1.0, 0.0), (0.5, 3.0, 0.5)
 	nDotL = saturate(nDotL);
-	float3 diffuse = LightColor * color.rgb * nDotL;	//lampans färg är vit
+	float3 diffuse = LightColor * color.rgb * nDotL;
 
 	// Calculate the specular term
 	float3 V = CamPosition - position;
@@ -69,18 +79,26 @@ float3 Calclighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	return shading;
 }
 
-float readShadowMap(float3 eyeDir){
-	matrix cameraViewToWorldMatrix = ;
-	matrix cameraViewToProjectedLightSpace = ;
+float readShadowMap(float3 pixelPos3D){
+	float3 camToPixel	= pixelPos3D - CamPosition;
+	float lightToPixelLength = length(pixelPos3D - PosLight);
 
-	float4 projectedEyeDir = ;
+	//matrix cameraViewToWorldMatrix = ;	//finns som buffer
+	//matrix cameraViewToProjectedLightSpace = mul(mul(ProjectionMatrixLight, ViewMatrixLight), CameraViewToWorldMatrix);
+
+	matrix cameraViewToProjectedLightSpace = mul(mul(InverseViewMatrix, ViewMatrixLight), ProjectionMatrixLight);
+	float4 projectedEyeDir = mul(cameraViewToProjectedLightSpace, float4(camToPixel, 1));
 	projectedEyeDir = projectedEyeDir / projectedEyeDir.w;
 
-	float2 textureCoordinates = projectedEyeDir.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+	float2 textureCoordinates = (projectedEyeDir.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
 
-	float3 depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;
 
-	return ((projectedEyeDir.z * 0.5) + 0.5) < depthValue;	//fel
+	float returnvalue = 1;	
+	if (((projectedEyeDir.z * 0.5) + 0.5) < depthValue) {
+		returnvalue = 0;	//shadow pixel
+	}
+	return returnvalue;
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
@@ -93,11 +111,11 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
 		//position = normalize(position);	//add for demonstration purposes
 
-	float3 eyeDir = position - CamPosition;
-	float shadowValue = readShadowMap(eyeDir);
+	float shadowValue = readShadowMap(position);
 
-	float3 light1 = Calclighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);
+	float3 light1 = CalcLighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);
 
-	return float4(light1, 1.0f);
+	//return float4(light1, 1.0f);
 	//return float4(shadowMap, 1.0f);
+	return float4(light1.x, light1.y, shadowValue, 1.0f);
 }
