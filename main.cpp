@@ -277,7 +277,7 @@ void CreateLightObjects() {
 	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ PosLight[0], PosLight[1], PosLight[2] }, { ViewLight[0], ViewLight[1], ViewLight[2] }, { 0,1,0 });
 	LightObject1.ViewMatrixLight = XMMatrixTranspose(LightObject1.ViewMatrixLight);
 
-	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
+	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 20.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
 	LightObject1.ProjectionMatrixLight = XMMatrixTranspose(LightObject1.ProjectionMatrixLight);
 
 	//---
@@ -896,7 +896,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				RenderLightShadingPass();
 
-				RenderFINAL();
+				//RenderFINAL();
 
 				gSwapChain->Present(0, 0);	//Växla front- och back-buffer
 			}
@@ -1028,8 +1028,9 @@ void RenderLightShadingPass(){
 
 	gDeviceContext->IASetInputLayout(NULL);
 
-	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
+	//gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);	//riktiga
 	//gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//används för test
+	gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//använder vi nu då vi inte behöver ett extra pass
 
 	//--------------------
 

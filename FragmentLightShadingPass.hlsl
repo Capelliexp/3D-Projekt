@@ -86,19 +86,27 @@ float readShadowMap(float3 pixelPos3D){
 	//matrix cameraViewToWorldMatrix = ;	//finns som buffer
 	//matrix cameraViewToProjectedLightSpace = mul(mul(ProjectionMatrixLight, ViewMatrixLight), CameraViewToWorldMatrix);
 
-	matrix cameraViewToProjectedLightSpace = mul(mul(InverseViewMatrix, ViewMatrixLight), ProjectionMatrixLight);
+	/*matrix cameraViewToProjectedLightSpace = mul(mul(InverseViewMatrix, ViewMatrixLight), ProjectionMatrixLight);
 	float4 projectedEyeDir = mul(cameraViewToProjectedLightSpace, float4(camToPixel, 1));
 	projectedEyeDir = projectedEyeDir / projectedEyeDir.w;
 
 	float2 textureCoordinates = (projectedEyeDir.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
 
-	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;*/
 
-	float returnvalue = 1;	
-	if (((projectedEyeDir.z * 0.5) + 0.5) < depthValue) {
-		returnvalue = 0;	//shadow pixel
-	}
-	return returnvalue;
+	float4 newPos = mul(pixelPos3D, mul(ViewMatrixLight, ProjectionMatrixLight));
+	newPos = newPos / newPos.w;
+
+	float2 textureCoordinates = (newPos.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r;
+
+	//float returnvalue = 1;	
+	//if (((projectedEyeDir.z * 0.5) + 0.5) < depthValue) {
+	//	returnvalue = 0;	//shadow pixel
+	//}
+
+	//return returnvalue;
+	return depthValue;
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
@@ -110,6 +118,7 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 		normal = (normal - 0.5) * 2;		//remove for demonstration purpose
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
 		//position = normalize(position);	//add for demonstration purposes
+	//float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
 
 	float shadowValue = readShadowMap(position);
 
@@ -117,5 +126,6 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 
 	//return float4(light1, 1.0f);
 	//return float4(shadowMap, 1.0f);
-	return float4(light1.x, light1.y, shadowValue, 1.0f);
+	//return float4(light1.x, light1.y, shadowValue, 1.0f);
+	return float4(shadowValue, shadowValue, shadowValue, 1.0f);
 }
