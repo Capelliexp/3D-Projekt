@@ -74,39 +74,28 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	float3 specular = pow(saturate(dot(normal, H)), specular_power) * LightColor * specular_color.xyz * nDotL;
 
 	// Final value is the sum of the albedo and diffuse with attenuation applied
-	attenuation = (attenuation + 0.05) * (10/10.5);	//ambient
+	attenuation = (attenuation + 0.05) * (10 / 10.5);	//ambient
 	float3 shading = (diffuse + specular) * (attenuation);
 	return shading;
 }
 
-float readShadowMap(float3 pixelPos3D){
-	float3 camToPixel	= pixelPos3D - CamPosition;
+float readShadowMap(float3 pixelPos3D) {
+	float3 camToPixel = pixelPos3D - CamPosition;
 	float lightToPixelLength = length(pixelPos3D - PosLight);
-
-	//matrix cameraViewToWorldMatrix = ;	//finns som buffer
-	//matrix cameraViewToProjectedLightSpace = mul(mul(ProjectionMatrixLight, ViewMatrixLight), CameraViewToWorldMatrix);
-
-	/*matrix cameraViewToProjectedLightSpace = mul(mul(InverseViewMatrix, ViewMatrixLight), ProjectionMatrixLight);
-	float4 projectedEyeDir = mul(cameraViewToProjectedLightSpace, float4(camToPixel, 1));
-	projectedEyeDir = projectedEyeDir / projectedEyeDir.w;
-
-	float2 textureCoordinates = (projectedEyeDir.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
-
-	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001;*/
 
 	float4 newPos = mul(pixelPos3D, mul(ViewMatrixLight, ProjectionMatrixLight));
 	newPos = newPos / newPos.w;
 
 	float2 textureCoordinates = (newPos.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
-	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r;
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001f;
 
-	//float returnvalue = 1;	
-	//if (((projectedEyeDir.z * 0.5) + 0.5) < depthValue) {
-	//	returnvalue = 0;	//shadow pixel
-	//}
+	int returnValue = 0;
+	if (depthValue*100 < lightToPixelLength) {	//shadow
+		returnValue = 1;
+	}
 
-	//return returnvalue;
-	return depthValue;
+	//return depthValue;
+	return returnValue;	//returnerar alltid 0
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
@@ -115,10 +104,10 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 	float3 specular_color = SpecularAlbedoTexture.Sample(sampAni, input.TexCoord).xyz;
 	float specular_power = SpecularAlbedoTexture.Sample(sampAni, input.TexCoord.xy).w;
 	float3 normal = NormalTexture.Sample(sampAni, input.TexCoord).xyz;
-		normal = (normal - 0.5) * 2;		//remove for demonstration purpose
+	normal = (normal - 0.5) * 2;		//remove for demonstration purpose
 	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
-		//position = normalize(position);	//add for demonstration purposes
-	//float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
+	//position = normalize(position);	//add for demonstration purposes
+	float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
 
 	float shadowValue = readShadowMap(position);
 

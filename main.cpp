@@ -198,8 +198,8 @@ WVPI_Matriser MatrixObject;
 //-----------------------	Shadow-calcs
 
 struct LightShadingShadows {
-	XMMATRIX CameraViewToWorldMatrix;	//64-byte
-	XMMATRIX CameraProjectionToViewMatrix;	//64-byte
+	XMMATRIX CameraViewInverseMatrix;		//64-byte
+	XMMATRIX CameraProjectionInverseMatrix;	//64-byte
 };
 
 LightShadingShadows ShadowInfo;
@@ -210,10 +210,10 @@ void CreateMatrixObjects(){
 	MatrixObject.WorldMatrix = XMMatrixIdentity();
 	MatrixObject.WorldMatrix = XMMatrixTranspose(MatrixObject.WorldMatrix);
 
-	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5,1,1 }, { 2.5,0,2.5 }, { 0,1,0 } );	//pos, look, up
+	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5,1,1 }, { 2.5,0,2.5 }, { 0,1,0 } );	//pos, look, up	- ändra även CurrentCamPos
 	MatrixObject.ViewMatrix = XMMatrixTranspose(MatrixObject.ViewMatrix);
 
-	MatrixObject.ProjectionMatrix = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
+	MatrixObject.ProjectionMatrix = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ (ändra shadow calc)
 	MatrixObject.ProjectionMatrix = XMMatrixTranspose(MatrixObject.ProjectionMatrix);
 
 	//----------------------------------------------------------
@@ -235,8 +235,8 @@ void CreateMatrixObjects(){
 }
 
 void CreateShadowObjects() {
-	ShadowInfo.CameraViewToWorldMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
-	ShadowInfo.CameraProjectionToViewMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
+	ShadowInfo.CameraViewInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
+	ShadowInfo.CameraProjectionInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
 
 	D3D11_BUFFER_DESC ShadowBufferDesc;
 	memset(&ShadowBufferDesc, 0, sizeof(ShadowBufferDesc));
@@ -277,7 +277,7 @@ void CreateLightObjects() {
 	LightObject1.ViewMatrixLight = XMMatrixLookAtLH({ PosLight[0], PosLight[1], PosLight[2] }, { ViewLight[0], ViewLight[1], ViewLight[2] }, { 0,1,0 });
 	LightObject1.ViewMatrixLight = XMMatrixTranspose(LightObject1.ViewMatrixLight);
 
-	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 20.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
+	LightObject1.ProjectionMatrixLight = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
 	LightObject1.ProjectionMatrixLight = XMMatrixTranspose(LightObject1.ProjectionMatrixLight);
 
 	//---
@@ -301,6 +301,8 @@ void CreateLightObjects() {
 }
 
 void CreateOtherBuffers(){
+	CurrentCamPos = {2.5f, 1.0f, 1.0f, 0.0f};
+
 	D3D11_BUFFER_DESC CamPosDesc;
 	memset(&CamPosDesc, 0, sizeof(CamPosDesc));
 	CamPosDesc.ByteWidth = sizeof(CurrentCamPos);
@@ -748,7 +750,7 @@ void CreateTriangleData(){
 	lightSourceData.pSysMem = lightSource;
 	gDevice->CreateBuffer(&TriangleBufferDescBig_OBJ, &lightSourceData, &gVertexBuffer_lightSource);
 
-	//-----------------------------------------------	Dragon 1
+	////-----------------------------------------------	Dragon 1
 
 	OBJFormat* Drake1 = new OBJFormat[231288];
 	MTLFormat* DrakeAlbedo = new MTLFormat[1];
@@ -770,38 +772,38 @@ void CreateTriangleData(){
 	DrakeData_MTL.pSysMem = DrakeAlbedo;
 	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &DrakeData_MTL, &MTLBuffer_Drake);
 
-	//-----------------------------------------------	Dragon 2
+	////-----------------------------------------------	Dragon 2
 
-	OBJFormat* Drake2 = new OBJFormat[231288];
-	MTLFormat* DrakeAlbedo2 = new MTLFormat[1];
+	//OBJFormat* Drake2 = new OBJFormat[231288];
+	//MTLFormat* DrakeAlbedo2 = new MTLFormat[1];
 
-	readOBJ(Drake2, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 3.0f, 0.7f, 0.0f);
+	//readOBJ(Drake2, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 3.0f, 0.7f, 0.0f);
 
-	D3D11_SUBRESOURCE_DATA DrakeData2;
-	DrakeData2.pSysMem = Drake2;
-	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData2, &gVertexBuffer_Drake2);
+	//D3D11_SUBRESOURCE_DATA DrakeData2;
+	//DrakeData2.pSysMem = Drake2;
+	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData2, &gVertexBuffer_Drake2);
 
-	//-----------------------------------------------	Dragon 3
+	////-----------------------------------------------	Dragon 3
 
-	OBJFormat* Drake3 = new OBJFormat[231288];
-	MTLFormat* DrakeAlbedo3 = new MTLFormat[1];
+	//OBJFormat* Drake3 = new OBJFormat[231288];
+	//MTLFormat* DrakeAlbedo3 = new MTLFormat[1];
 
-	readOBJ(Drake3, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, -3.0f);
+	//readOBJ(Drake3, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, -3.0f);
 
-	D3D11_SUBRESOURCE_DATA DrakeData3;
-	DrakeData3.pSysMem = Drake3;
-	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData3, &gVertexBuffer_Drake3);
+	//D3D11_SUBRESOURCE_DATA DrakeData3;
+	//DrakeData3.pSysMem = Drake3;
+	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData3, &gVertexBuffer_Drake3);
 
-	//-----------------------------------------------	Dragon 4
+	////-----------------------------------------------	Dragon 4
 
-	OBJFormat* Drake4 = new OBJFormat[231288];
-	MTLFormat* DrakeAlbedo4 = new MTLFormat[1];
+	//OBJFormat* Drake4 = new OBJFormat[231288];
+	//MTLFormat* DrakeAlbedo4 = new MTLFormat[1];
 
-	readOBJ(Drake4, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, -3.0f, 0.7f, 0.0f);
+	//readOBJ(Drake4, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, -3.0f, 0.7f, 0.0f);
 
-	D3D11_SUBRESOURCE_DATA DrakeData4;
-	DrakeData4.pSysMem = Drake4;
-	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData4, &gVertexBuffer_Drake4);
+	//D3D11_SUBRESOURCE_DATA DrakeData4;
+	//DrakeData4.pSysMem = Drake4;
+	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData4, &gVertexBuffer_Drake4);
 }
 
 void SetViewport(){
@@ -813,7 +815,7 @@ void SetViewport(){
 	viewport[0].TopLeftX = 0;
 	viewport[0].TopLeftY = 0;
 
-	//viewport[1].Width = ViewPortWidth = 2048.0f;	//for shadow mapp
+	//viewport[1].Width = ViewPortWidth = 2048.0f;	//for shadow mapp ???
 	//viewport[1].Height = ViewPortHeight = 2048.0f;
 	//viewport[1].MinDepth = 0.0f;
 	//viewport[1].MaxDepth = 1.0f;
@@ -879,9 +881,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
 				//RenderFirstPass(gVertexBuffer_lightSource, gConstantBuffer_Boll, 2280, gTextureView_BTH);	//obs! ljuset är i mitten av bollen... 
 				RenderFirstPass(gVertexBuffer_Drake1, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				//RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				//RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				//RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
 
 				gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -890,9 +892,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderShadowMapping(gVertexBuffer_Box, 36);
 				RenderShadowMapping(gVertexBuffer_Boll, 2280);
 				RenderShadowMapping(gVertexBuffer_Drake1, 231288);
-				RenderShadowMapping(gVertexBuffer_Drake2, 231288);
-				RenderShadowMapping(gVertexBuffer_Drake3, 231288);
-				RenderShadowMapping(gVertexBuffer_Drake4, 231288);
+				//RenderShadowMapping(gVertexBuffer_Drake2, 231288);
+				//RenderShadowMapping(gVertexBuffer_Drake3, 231288);
+				//RenderShadowMapping(gVertexBuffer_Drake4, 231288);
 
 				RenderLightShadingPass();
 
@@ -909,9 +911,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gVertexBuffer_Boll->Release();
 		//gVertexBuffer_lightSource->Release();
 		gVertexBuffer_Drake1->Release();
-		gVertexBuffer_Drake2->Release();
-		gVertexBuffer_Drake3->Release();
-		gVertexBuffer_Drake4->Release();
+		//gVertexBuffer_Drake2->Release();
+		//gVertexBuffer_Drake3->Release();
+		//gVertexBuffer_Drake4->Release();
 
 		MTLBuffer_Box->Release();		//LÄGG TILL FLER MTL:ER HÄR
 		gConstantBuffer_Boll->Release();
@@ -1181,8 +1183,8 @@ void Clock(){
 }
 
 void Update(){
-	ShadowInfo.CameraViewToWorldMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
-	ShadowInfo.CameraProjectionToViewMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
+	ShadowInfo.CameraViewInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
+	ShadowInfo.CameraProjectionInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
 	
 	//mapped_subresource
 	D3D11_MAPPED_SUBRESOURCE mappedResource1;
