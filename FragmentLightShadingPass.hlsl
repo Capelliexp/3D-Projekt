@@ -33,7 +33,7 @@ cbuffer Matrices:register(b3) {
 
 struct VS_OUT {
 	float4 PositionQuad : SV_Position;	//position på pixel pga full screen quad
-	float2 TexCoord : TexCoord;		//samma som ovan?
+	float2 TexCoord : TexCoord;
 };
 
 float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition) {
@@ -83,20 +83,23 @@ float readShadowMap(float3 pixelPos3D) {
 	float3 camToPixel = pixelPos3D - CamPosition;
 	float lightToPixelLength = length(pixelPos3D - PosLight);
 
-	float4 newPos = mul(pixelPos3D, mul(ViewMatrixLight, ProjectionMatrixLight));
-	newPos = newPos / newPos.w;
+	float4 newPos = mul(float4(pixelPos3D, 1.0f), mul(ViewMatrixLight, ProjectionMatrixLight));
+	newPos.xyz /= newPos.w;
 
-	float2 textureCoordinates = (newPos.xy * float2(0.5, 0.5)) + float2(0.5, 0.5);
-	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r - 0.0001f;
+	//float2 textureCoordinates = (newPos.xy * float2(0.5f, -0.5f)) + float2(0.5f, 0.5f);	//wrong? opengl to directx
 
-	int returnValue = 0;
-	if (depthValue*100 < lightToPixelLength) {	//shadow
-		returnValue = 1;
-	}
+	float2 textureCoordinates = float2((newPos.x / 2.0) + 0.5, (newPos.y / -2.0) + 0.5);
 
-	depthValue = 1 - ((1 - depthValue) * 7);
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r;
 
-	return depthValue;
+	if (depthValue < newPos.z)
+		return 0.1;
+	else
+		return 1.0;
+
+	//depthValue = 1 - ((1 - depthValue) * 20);	//clearer darkness
+
+	//return depthValue;
 	//return returnValue;	//returnerar alltid 0
 }
 
@@ -117,6 +120,6 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 
 	//return float4(light1, 1.0f);
 	//return float4(shadowMap, 1.0f);
-	return float4(light1.x, light1.y, (1 - shadowValue), 1.0f);
-	//return float4(shadowValue, shadowValue, shadowValue, 1.0f);
+	//return float4(light1.x, light1.y, shadowValue, 1.0f);
+	return float4(shadowValue, shadowValue, shadowValue, 1.0f);
 }
