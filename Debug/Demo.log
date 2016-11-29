@@ -1,5 +1,6 @@
 ﻿D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(84,36-56): warning X3206: implicit truncation of vector type
 D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(86,18-77): warning X3206: 'mul': implicit truncation of vector type
+D:\Git Repos\3D-Projekt\FragmentLightShadingPass.hlsl(46,2): warning X4000: use of potentially uninitialized variable (CalcLighting)
   
   compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\FragmentLightShadingPass.cso
   Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe

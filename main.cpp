@@ -690,7 +690,7 @@ void CreateTriangleData(){
 	OBJFormat* Box = new OBJFormat[36];
 	MTLFormat* BoxAlbedo = new MTLFormat[1];
 
-	readOBJ(Box, "OBJs & Texturs/Box & Boll/box.obj", 1.0f, 0.0f, 0.5f, 0.0f);
+	readOBJ(Box, "OBJs & Texturs/Box & Boll/box.obj", 1.0f, -2.0f, 0.5f, -2.0f);
 	readMTL(BoxAlbedo, "OBJs & Texturs/Box & Boll/box.mtl");
 
 	D3D11_BUFFER_DESC TriangleBufferDescSmall_OBJ;
@@ -722,7 +722,7 @@ void CreateTriangleData(){
 	OBJFormat* Boll = new OBJFormat[2280];
 	MTLFormat* BollAlbedo = new MTLFormat[1];
 
-	readOBJ(Boll, "OBJs & Texturs/Box & Boll/sphere1.obj", 1.0f, 0.0f, 2.0f, 0.0f);
+	readOBJ(Boll, "OBJs & Texturs/Box & Boll/sphere1.obj", 1.0f, -2.0f, 2.0f, -2.0f);
 	readMTL(BollAlbedo, "OBJs & Texturs/Box & Boll/sphere1.mtl");
 
 	D3D11_BUFFER_DESC TriangleBufferDescBig_OBJ;

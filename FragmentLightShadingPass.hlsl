@@ -94,8 +94,10 @@ float readShadowMap(float3 pixelPos3D) {
 		returnValue = 1;
 	}
 
-	//return depthValue;
-	return returnValue;	//returnerar alltid 0
+	depthValue = 1 - ((1 - depthValue) * 7);
+
+	return depthValue;
+	//return returnValue;	//returnerar alltid 0
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
@@ -115,6 +117,6 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 
 	//return float4(light1, 1.0f);
 	//return float4(shadowMap, 1.0f);
-	//return float4(light1.x, light1.y, shadowValue, 1.0f);
-	return float4(shadowValue, shadowValue, shadowValue, 1.0f);
+	return float4(light1.x, light1.y, (1 - shadowValue), 1.0f);
+	//return float4(shadowValue, shadowValue, shadowValue, 1.0f);
 }
