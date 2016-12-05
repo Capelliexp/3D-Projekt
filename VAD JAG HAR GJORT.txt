@@ -21,6 +21,11 @@
 		a. Men vad används shadow matrix till?!? Boken är så jäääävla diffus (pun intended)
 	G. fixa calc i LightShadingPass
 		A * B = C | C^-1 = B^-1 * A^-1
+	H. lär dig Lin. Alg för helvete!
+	I. Shadows fixat!
+5. Dags att få glow effect/gaussian filter att fungera
 
-X. Kolla varför programmet måste stoppas vid körning
+X1. Kolla varför programmet måste stoppas vid körning
 	A. Har tidigare stoppat vid CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor)
+		a. gör det efter shadows också
+X2. Kolla så alla typer av ljus fungerar (deferred rendering)

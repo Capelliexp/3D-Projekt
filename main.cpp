@@ -168,6 +168,7 @@ void Render_pre();
 void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11ShaderResourceView* texure);
 void RenderShadowMapping(ID3D11Buffer* OBJ, int draws);
 void RenderLightShadingPass();
+void ComputeBloom();
 void RenderFINAL();
 
 //-----------------------	Light-structen
@@ -388,29 +389,6 @@ void CreateDepth() {
 
 	depthTex1->Release();
 }
-
-//void CreateDepthStencilState(){
-//	D3D11_DEPTH_STENCIL_DESC dsDesc;
-//	dsDesc.DepthEnable = true;
-//	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-//	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-//	dsDesc.StencilEnable = true;
-//	dsDesc.StencilReadMask = 0xFF;
-//	dsDesc.StencilWriteMask = 0xFF;
-//	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-//	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-//	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-//
-//	hr = gDevice->CreateDepthStencilState(&dsDesc, &pDSState);
-//
-//	//Bind the Depth-Stencil state
-//	//gDeviceContext->OMSetDepthStencilState(pDSState, 1);	//borde göras per rendering pass ???
-//}
 
 void CreateShaders(){
 
@@ -651,31 +629,31 @@ void CreateTriangleData(){
 		0.0f, 1.0f, 0.0f,		//v5 norm
 	};
 
-	//OBJFormat light[6] = {
-	//	2.4f, 3.1f, 2.7f,		//v0 pos	-	top/vänster	-	1
-	//	0.0f, 0.0f,				//v0 tex
-	//	0.0f, 0.0f, -1.0f,
+	OBJFormat light[6] = {
+		2.4f, 3.1f, 2.8f,		//v0 pos	-	top/vänster	-	1
+		0.0f, 0.0f,				//v0 tex
+		0.0f, 0.0f, -1.0f,
 
-	//	2.6f, 2.9f, 2.7f,		//v1		-	bot/höger	-	2
-	//	1.0f, 1.0f,				//v1 tex
-	//	0.0f, 0.0f, -1.0f,
+		2.6f, 2.9f, 2.8f,		//v1		-	bot/höger	-	2
+		1.0f, 1.0f,				//v1 tex
+		0.0f, 0.0f, -1.0f,
 
-	//	2.4f, 2.9f, 2.7f,	 	//v2		-	bot/vänster	-	3
-	//	0.0f, 1.0f,				//v2 tex
-	//	0.0f, 0.0f, -1.0f,
+		2.4f, 2.9f, 2.8f,	 	//v2		-	bot/vänster	-	3
+		0.0f, 1.0f,				//v2 tex
+		0.0f, 0.0f, -1.0f,
 
-	//	2.4f, 3.1f, 2.7f,		//v3 pos	-	top/vänster	-	1
-	//	0.0f, 0.0f,				//v3 tex
-	//	0.0f, 0.0f, -1.0f,
+		2.4f, 3.1f, 2.8f,		//v3 pos	-	top/vänster	-	1
+		0.0f, 0.0f,				//v3 tex
+		0.0f, 0.0f, -1.0f,
 
-	//	2.6f, 3.1f, 2.7f,		//v4		-	top/höger	-	4
-	//	1.0f, 0.0f,				//v4 tex
-	//	0.0f, 0.0f, -1.0f,
+		2.6f, 3.1f, 2.8f,		//v4		-	top/höger	-	4
+		1.0f, 0.0f,				//v4 tex
+		0.0f, 0.0f, -1.0f,
 
-	//	2.6f, 2.9f, 2.7f,		//v5		-	bot/höger	-	2
-	//	1.0f, 1.0f,				//v5 tex
-	//	0.0f, 0.0f, -1.0f,
-	//};
+		2.6f, 2.9f, 2.8f,		//v5		-	bot/höger	-	2
+		1.0f, 1.0f,				//v5 tex
+		0.0f, 0.0f, -1.0f,
+	};
 
 	//-----------------------------------------------
 
@@ -713,9 +691,9 @@ void CreateTriangleData(){
 	FloorData.pSysMem = Floor;
 	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor);
 
-	/*D3D11_SUBRESOURCE_DATA LightData;
+	D3D11_SUBRESOURCE_DATA LightData;
 	LightData.pSysMem = light;
-	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &LightData, &gVertexBuffer_Light);*/
+	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &LightData, &gVertexBuffer_Light);
 
 	//-----------------------------------------------	Boll
 
@@ -848,12 +826,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		SetViewport();
 		SetScissor();
 		CreateMatrixObjects();
-		//CreateShadowObjects();	//används i CreateLightObjects()
 		CreateLightObjects();
 		CreateOtherBuffers();
 		CreateRastarizer();
 		CreateDepth();
-		//CreateDepthStencilState();
 		CreateShaders();
 		CreateTriangleData();
 		CreateTexturesAndViews();
@@ -875,30 +851,36 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				Render_pre();
 
-				RenderFirstPass(gVertexBuffer_Floor, nullptr, 6, gTextureView_Box);
-				//RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
-				RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
-				RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
-				//RenderFirstPass(gVertexBuffer_lightSource, gConstantBuffer_Boll, 2280, gTextureView_BTH);	//obs! ljuset är i mitten av bollen... 
-				RenderFirstPass(gVertexBuffer_Drake1, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				//RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				//RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
-				//RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				{
+					RenderFirstPass(gVertexBuffer_Floor, nullptr, 6, gTextureView_Box);
+					//RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
+					RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
+					RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
+					//RenderFirstPass(gVertexBuffer_lightSource, gConstantBuffer_Boll, 2280, gTextureView_BTH);	//obs! ljuset är i mitten av bollen... 
+					RenderFirstPass(gVertexBuffer_Drake1, MTLBuffer_Drake, 231288, gTextureView_BTH);
+					//RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
+					//RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
+					//RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
+				}
 
 				gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-				RenderShadowMapping(gVertexBuffer_Floor, 6);
-				//RenderShadowMapping(gVertexBuffer_Light, 6);
-				RenderShadowMapping(gVertexBuffer_Box, 36);
-				RenderShadowMapping(gVertexBuffer_Boll, 2280);
-				RenderShadowMapping(gVertexBuffer_Drake1, 231288);
-				//RenderShadowMapping(gVertexBuffer_Drake2, 231288);
-				//RenderShadowMapping(gVertexBuffer_Drake3, 231288);
-				//RenderShadowMapping(gVertexBuffer_Drake4, 231288);
+				{
+					RenderShadowMapping(gVertexBuffer_Floor, 6);
+					//RenderShadowMapping(gVertexBuffer_Light, 6);
+					RenderShadowMapping(gVertexBuffer_Box, 36);
+					RenderShadowMapping(gVertexBuffer_Boll, 2280);
+					RenderShadowMapping(gVertexBuffer_Drake1, 231288);
+					//RenderShadowMapping(gVertexBuffer_Drake2, 231288);
+					//RenderShadowMapping(gVertexBuffer_Drake3, 231288);
+					//RenderShadowMapping(gVertexBuffer_Drake4, 231288);
+				}
 
 				RenderLightShadingPass();
 
-				//RenderFINAL();
+				//ComputeBloom();
+
+				RenderFINAL();
 
 				gSwapChain->Present(0, 0);	//Växla front- och back-buffer
 			}
@@ -946,7 +928,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 }
 
 void Render_pre(){
-
 	float clearColor[] = { 0, 0, 0, 1 };
 
 	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[0], clearColor);
@@ -1025,14 +1006,11 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 }
 
 void RenderLightShadingPass(){
-
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);	//kan byta till LIST nen då krävs 6 drawcalls
 
 	gDeviceContext->IASetInputLayout(NULL);
 
-	//gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);	//riktiga
-	//gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//används för test
-	gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);		//använder vi nu då vi inte behöver ett extra pass
+	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);	//riktiga
 
 	//--------------------
 
@@ -1062,8 +1040,35 @@ void RenderLightShadingPass(){
 	gDeviceContext->Draw(3, 0);
 }
 
-void RenderFINAL() {
+void ComputeBloom() {
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
+	//gDeviceContext->CSSetShader(XXX, nullptr, 0);
 
+	//--------------------
+
+	gDeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+
+	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//ljus
+	gDeviceContext->PSSetConstantBuffers(1, 1, &CamPosBuffer);
+	gDeviceContext->PSSetConstantBuffers(2, 1, &ShadowBuffer_1);
+	gDeviceContext->PSSetConstantBuffers(3, 1, &MatriserBuffer);
+
+	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);	//texturer från light shading pass
+	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
+	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
+	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
+	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);	//shadow mapping
+
+																//--------------------
+
+	gDeviceContext->Dispatch(0, 0, 0);
+}
+
+void RenderFINAL() {
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFinal);
@@ -1216,7 +1221,6 @@ void Update(){
 }
 
 void Keyboard(){
-
 	//https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
 	//https://msdn.microsoft.com/en-us/library/windows/desktop/ms646293(v=vs.85).aspx
 

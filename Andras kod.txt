@@ -1,0 +1,16 @@
+Francisco shadowTest:
+float4x4 lightViewProj = mul(ViewMatrixLight, ProjectionMatrixLight);
+
+float4 newPos = mul(float4(pixelPos3D,1.0), lightViewProj);
+newPos.xyz /= newPos.w;
+
+float2 textureCoordinates = float2(newPos.x / 2.0 + 0.5, newPos.y / -2.0 + 0.5);
+
+float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r; 
+ 
+if (depthValue < newPos.z)
+    return 0.1;
+else
+    return 1.0;
+	
+----------------------------------------------------------------------------------

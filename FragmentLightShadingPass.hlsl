@@ -36,7 +36,7 @@ struct VS_OUT {
 	float2 TexCoord : TexCoord;
 };
 
-float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition) {
+float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition, float shadowValue) {
 
 	float3 L;
 	float attenuation = 1;
@@ -73,9 +73,14 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	float3 H = normalize(L + V);
 	float3 specular = pow(saturate(dot(normal, H)), specular_power) * LightColor * specular_color.xyz * nDotL;
 
+	if (attenuation < 0) {
+		return float3(1, 0, 0);	//red error
+	}
+
 	// Final value is the sum of the albedo and diffuse with attenuation applied
 	attenuation = (attenuation + 0.05) * (10 / 10.5);	//ambient
-	float3 shading = (diffuse + specular) * (attenuation);
+	float3 shading = ((diffuse + specular) * shadowValue) * (attenuation);
+
 	return shading;
 }
 
@@ -90,7 +95,7 @@ float readShadowMap(float3 pixelPos3D) {
 
 	float2 textureCoordinates = float2((newPos.x / 2.0) + 0.5, (newPos.y / -2.0) + 0.5);
 
-	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r;
+	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r + 0.0001f;
 
 	if (depthValue < newPos.z)
 		return 0.1;
@@ -116,10 +121,10 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 
 	float shadowValue = readShadowMap(position);
 
-	float3 light1 = CalcLighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition);
+	float3 light1 = CalcLighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition, shadowValue);
 
-	//return float4(light1, 1.0f);
+	return float4(light1, 1.0f);
 	//return float4(shadowMap, 1.0f);
 	//return float4(light1.x, light1.y, shadowValue, 1.0f);
-	return float4(shadowValue, shadowValue, shadowValue, 1.0f);
+	//return float4(shadowValue, shadowValue, shadowValue, 1.0f);
 }

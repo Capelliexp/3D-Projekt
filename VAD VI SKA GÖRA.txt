@@ -20,7 +20,7 @@ Texturing and Lighting:
 
 
 Projection Techniques:
-		Shadow mapping
+(done)		Shadow mapping
 
 
 Acceleration Techniques:
@@ -29,5 +29,5 @@ Acceleration Techniques:
 
 
 Other techniques:
-		Glow-effect using compute shader
+			Glow-effect (bloom) using compute shader
 (skip)		Make a small game in your application
