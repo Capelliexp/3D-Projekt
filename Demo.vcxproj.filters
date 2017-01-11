@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Shaders\2 ShadowMappingPass">
       <UniqueIdentifier>{09e410d3-5b2e-4fd0-a1f5-f7da8246b544}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Shaders\5 ComputeShader">
+      <UniqueIdentifier>{8949fd0e-9c18-4246-a459-707bd804c7ca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -73,6 +76,9 @@
     </FxCompile>
     <FxCompile Include="VertexShadowMapping.hlsl">
       <Filter>Source Files\Shaders\2 ShadowMappingPass</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputeShaderBloom.hlsl">
+      <Filter>Source Files\Shaders\5 ComputeShader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

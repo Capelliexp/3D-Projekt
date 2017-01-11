@@ -119,6 +119,8 @@ ID3D11PixelShader* gPixelShaderFinal = nullptr;
 ID3D11PixelShader* gPixelShaderFirstPass = nullptr;
 ID3D11PixelShader* gPixelShaderLightShadingPass = nullptr;
 
+ID3D11ComputeShader* gComputeShaderBloom = nullptr;
+
 //-----------------------	RTV, DSV och SRV
 
 ID3D11RenderTargetView* gBackbufferRTV = nullptr;	//screen output
@@ -502,8 +504,18 @@ void CreateShaders(){
 	D3DCompileFromFile(L"Fragment.hlsl", nullptr, nullptr, "PS_main", "ps_4_0", 0, 0, &pPS1, nullptr);
 
 	gDevice->CreatePixelShader(pPS1->GetBufferPointer(), pPS1->GetBufferSize(), nullptr, &gPixelShaderFinal);
-	
+
 	pPS1->Release();
+
+	//-------------------------------------------------------------------------------------------------------------------------------
+
+	//CREATE COMPUTE SHADER
+	ID3DBlob* pCS1 = nullptr;
+	D3DCompileFromFile(L"ComputeShaderBloom.hlsl", nullptr, nullptr, "CS_main", "ps_4_0", 0, 0, &pCS1, nullptr);
+
+	gDevice->CreateComputeShader(pCS1->GetBufferPointer(), pCS1->GetBufferSize(), nullptr, &gComputeShaderBloom);
+
+	pCS1->Release();
 }
 
 void CreateTexturesAndViews(){
@@ -600,6 +612,34 @@ void CreateTexturesAndViews(){
 	gDevice->CreateShaderResourceView(FirstPassTex[3], &shaderResourceViewFromFirstPass, &gFirstPassSRV[3]);
 
 	gDevice->CreateShaderResourceView(LightShadingTex, &shaderResourceViewFromFirstPass, &gLightShadingPassSRV);
+
+	//-------------	Create Compute Shader Output
+
+	D3D11_BUFFER_DESC ComputeShaderBufferDesc;
+	memset(&ComputeShaderBufferDesc, 0, sizeof(ComputeShaderBufferDesc));
+
+	ComputeShaderBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	ComputeShaderBufferDesc.ByteWidth = 1280 * 720;
+	ComputeShaderBufferDesc.CPUAccessFlags = 0;
+	ComputeShaderBufferDesc.MiscFlags = 0;
+	ComputeShaderBufferDesc.StructureByteStride = 12;
+	ComputeShaderBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	ID3D11Buffer* CSBufferPointer = nullptr;
+	gDevice->CreateBuffer(&ComputeShaderBufferDesc, nullptr, &CSBufferPointer);
+
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc;
+	uav_desc.Format = DXGI_FORMAT_R32G32B32_UINT;			//FEL FEL FEL	DXGI_FORMAT_R32G32B32A32_FLOAT borde funka?
+	uav_desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	uav_desc.Buffer.FirstElement = 0;
+	uav_desc.Buffer.Flags = 0;
+	uav_desc.Buffer.NumElements = 1024;
+
+	ID3D11UnorderedAccessView* UAVptr = nullptr;
+	gDevice->CreateUnorderedAccessView(CSBufferPointer, &uav_desc, &UAVptr);
+	
+	CSBufferPointer->Release();
 }
 
 void CreateTriangleData(){
@@ -1046,26 +1086,13 @@ void ComputeBloom() {
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
-	//gDeviceContext->CSSetShader(XXX, nullptr, 0);
+	gDeviceContext->CSSetShader(gComputeShaderBloom, nullptr, 0);
 
 	//--------------------
 
-	gDeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
 
-	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//ljus
-	gDeviceContext->PSSetConstantBuffers(1, 1, &CamPosBuffer);
-	gDeviceContext->PSSetConstantBuffers(2, 1, &ShadowBuffer_1);
-	gDeviceContext->PSSetConstantBuffers(3, 1, &MatriserBuffer);
-
-	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);	//texturer från light shading pass
-	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
-	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
-	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
-	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);	//shadow mapping
-
-																//--------------------
-
-	gDeviceContext->Dispatch(0, 0, 0);
+	gDeviceContext->Dispatch(20, 20, 1);	//byt
 }
 
 void RenderFINAL() {
@@ -1082,6 +1109,7 @@ void RenderFINAL() {
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
+	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);
 
