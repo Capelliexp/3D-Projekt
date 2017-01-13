@@ -102,10 +102,10 @@ ID3D11Buffer* ShadowBuffer_1 = nullptr;
 
 //-----------------------	Shaders
 
-ID3D11InputLayout* gVertexLayoutFinal = nullptr;
-ID3D11InputLayout* gVertexLayoutFirstPass = nullptr;
-ID3D11InputLayout* gVertexLayoutShadowMapping = nullptr;
-ID3D11InputLayout* gVertexLayoutLightShadingPass = nullptr;
+ID3D11InputLayout*	gVertexLayoutFinal = nullptr;
+ID3D11InputLayout*	gVertexLayoutFirstPass = nullptr;
+ID3D11InputLayout*	gVertexLayoutShadowMapping = nullptr;
+ID3D11InputLayout*	gVertexLayoutLightShadingPass = nullptr;
 ID3D11VertexShader* gVertexShaderFinal = nullptr;
 ID3D11VertexShader* gVertexShaderFirstPass = nullptr;
 ID3D11VertexShader* gVertexShaderShadowMapping = nullptr;
@@ -123,20 +123,25 @@ ID3D11ComputeShader* gComputeShaderBloom = nullptr;
 
 //-----------------------	RTV, DSV och SRV
 
-ID3D11RenderTargetView* gBackbufferRTV = nullptr;	//screen output
-ID3D11DepthStencilView* gDepthStencilView;			//depth test
+ID3D11RenderTargetView*	gBackbufferRTV = nullptr;	//screen output
+ID3D11DepthStencilView*	gDepthStencilView;			//depth test
 
-ID3D11RenderTargetView* gFirstPassRTV[4];	//shader output
-ID3D11ShaderResourceView* gFirstPassSRV[4];	//shader input
-ID3D11Texture2D* FirstPassTex[4];			//texture for RTV and SRV
+ID3D11RenderTargetView*		gFirstPassRTV[4];	//shader output
+ID3D11ShaderResourceView*	gFirstPassSRV[4];	//shader input
+ID3D11Texture2D*			FirstPassTex[4];			//texture for RTV and SRV
 
-ID3D11RenderTargetView* gLightShadingPassRTV;	//skapa dessa...
-ID3D11ShaderResourceView* gLightShadingPassSRV;
-ID3D11Texture2D* LightShadingTex;
+ID3D11RenderTargetView*		gLightShadingPassRTV;	//skapa dessa...
+ID3D11ShaderResourceView*	gLightShadingPassSRV;
+ID3D11Texture2D*			LightShadingTex;
+
+ID3D11RenderTargetView*		computeTextureRTV;	//för bloom compute shader
+ID3D11UnorderedAccessView*	computeTextureUAV;
+ID3D11ShaderResourceView*	computeTextureSRV;	//för pixel shader i FINAL
+ID3D11Texture2D*			computeTexture;
 
 //-----------------------
 
-ID3D11RasterizerState* RastState = nullptr;	//till rasterizer
+ID3D11RasterizerState*	RastState = nullptr;	//till rasterizer
 ID3D11DepthStencilState* pDSState = nullptr;
 
 LARGE_INTEGER TotalFrames = { 0 };
@@ -613,8 +618,8 @@ void CreateTexturesAndViews(){
 
 	gDevice->CreateShaderResourceView(LightShadingTex, &shaderResourceViewFromFirstPass, &gLightShadingPassSRV);
 
-	//-------------	Create Compute Shader Output
-
+	//-------------	Create Compute Shader Output 1
+	/*
 	D3D11_BUFFER_DESC ComputeShaderBufferDesc;
 	memset(&ComputeShaderBufferDesc, 0, sizeof(ComputeShaderBufferDesc));
 
@@ -630,7 +635,7 @@ void CreateTexturesAndViews(){
 
 
 	D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc;
-	uav_desc.Format = DXGI_FORMAT_R32G32B32_UINT;			//FEL FEL FEL	DXGI_FORMAT_R32G32B32A32_FLOAT borde funka?
+	uav_desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			//DXGI_FORMAT_R32G32B32_UINT är FEL	- DXGI_FORMAT_R32G32B32A32_FLOAT borde funka?
 	uav_desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	uav_desc.Buffer.FirstElement = 0;
 	uav_desc.Buffer.Flags = 0;
@@ -640,6 +645,50 @@ void CreateTexturesAndViews(){
 	gDevice->CreateUnorderedAccessView(CSBufferPointer, &uav_desc, &UAVptr);
 	
 	CSBufferPointer->Release();
+	*/
+	//-------------	Create Compute Shader Output 2
+
+	//create gauss texture
+	D3D11_TEXTURE2D_DESC computeTextureDesc;
+	ZeroMemory(&computeTextureDesc, sizeof(computeTextureDesc));
+	computeTextureDesc.Width = 1280;
+	computeTextureDesc.Height = 720;
+	computeTextureDesc.MipLevels = 1;
+	computeTextureDesc.ArraySize = 1;
+	computeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;	//funkar detta?
+	computeTextureDesc.SampleDesc.Count = 1;
+	computeTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	computeTextureDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+	computeTextureDesc.CPUAccessFlags = 0;
+	computeTextureDesc.MiscFlags = 0;
+
+	gDevice->CreateTexture2D(&computeTextureDesc, NULL, &computeTexture);
+
+	//create render target view
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetDescCompute;
+	renderTargetDescCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	renderTargetDescCompute.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	renderTargetDescCompute.Texture2D.MipSlice = 0;
+
+	gDevice->CreateRenderTargetView(computeTexture, &renderTargetDescCompute, &computeTextureRTV);
+
+	//create shader resource view
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewCompute;
+	shaderResourceViewCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	shaderResourceViewCompute.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewCompute.Texture2D.MostDetailedMip = 0;
+	shaderResourceViewCompute.Texture2D.MipLevels = 1;
+
+	gDevice->CreateShaderResourceView(computeTexture, &shaderResourceViewCompute, &computeTextureSRV);
+
+	//create unordered access view
+	D3D11_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewCompute;
+	unorderedAccessViewCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	unorderedAccessViewCompute.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+	unorderedAccessViewCompute.Texture2D.MipSlice = 0;
+
+	hr = gDevice->CreateUnorderedAccessView(computeTexture, &unorderedAccessViewCompute, &computeTextureUAV);
+
 }
 
 void CreateTriangleData(){
@@ -918,7 +967,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				RenderLightShadingPass();
 
-				//ComputeBloom();
+				ComputeBloom();
 
 				RenderFINAL();
 
@@ -1073,7 +1122,7 @@ void RenderLightShadingPass(){
 	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
 	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
 	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
-	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);	//shadow mapping
+	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);		//shadow mapping
 
 	//--------------------
 
@@ -1081,6 +1130,10 @@ void RenderLightShadingPass(){
 }
 
 void ComputeBloom() {
+	//----- cleanup from RenderLightShadingPass		-	KANSKE INTE BEHÖVS
+	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+	//-----
+
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
@@ -1091,11 +1144,17 @@ void ComputeBloom() {
 	//--------------------
 
 	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	// <--- KOMMER GE ERROR ?!?
 
-	gDeviceContext->Dispatch(20, 20, 1);	//byt
+	gDeviceContext->Dispatch(32, 32, 1);	//byt
 }
 
 void RenderFINAL() {
+	//----- cleanup from ComputeBloom	-	KANSKE INTE BEHÖVS
+	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
+	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);
+	//-----
+
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	gDeviceContext->IASetInputLayout(gVertexLayoutFinal);
@@ -1111,7 +1170,8 @@ void RenderFINAL() {
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
 	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 
-	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);
+	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
+	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()
 
 	//--------------------
 

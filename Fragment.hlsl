@@ -1,4 +1,5 @@
 Texture2D LightShadingTexture	: register(t0);
+Texture2D BloomTexture			: register(t1);
 SamplerState sampAni;
 
 struct VS_OUT {
