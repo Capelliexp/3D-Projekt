@@ -425,9 +425,7 @@ void CreateShaders(){
 
 	//create input layout (verified using vertex shader)
 	D3D11_INPUT_ELEMENT_DESC inputDesc5[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }/*,
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },*/
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	gDevice->CreateInputLayout(inputDesc5, ARRAYSIZE(inputDesc5), pVS5->GetBufferPointer(), pVS5->GetBufferSize(), &gVertexLayoutShadowMapping);
 	// we do not need this COM object anymore, so we release it.
@@ -516,7 +514,7 @@ void CreateShaders(){
 
 	//CREATE COMPUTE SHADER
 	ID3DBlob* pCS1 = nullptr;
-	D3DCompileFromFile(L"ComputeShaderBloom.hlsl", nullptr, nullptr, "CS_main", "ps_4_0", 0, 0, &pCS1, nullptr);
+	D3DCompileFromFile(L"ComputeShaderBloom.hlsl", nullptr, nullptr, "CS_main", "cs_5_0", 0, 0, &pCS1, nullptr);
 
 	gDevice->CreateComputeShader(pCS1->GetBufferPointer(), pCS1->GetBufferSize(), nullptr, &gComputeShaderBloom);
 
@@ -1130,7 +1128,7 @@ void RenderLightShadingPass(){
 }
 
 void ComputeBloom() {
-	//----- cleanup from RenderLightShadingPass		-	KANSKE INTE BEHÖVS
+	//----- cleanup from RenderLightShadingPass		-	Might not be necessary
 	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	//-----
 
@@ -1144,9 +1142,9 @@ void ComputeBloom() {
 	//--------------------
 
 	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
-	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	// <--- KOMMER GE ERROR ?!?
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
 
-	gDeviceContext->Dispatch(32, 32, 1);	//byt
+	gDeviceContext->Dispatch(32, 18, 1);	//doesnt work with res 1280x720? (generates 40x40 blocks)
 }
 
 void RenderFINAL() {
