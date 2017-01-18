@@ -1,4 +1,4 @@
-﻿D:\Git Repos\3D-Projekt\ComputeShaderBloom.hlsl(4,1-23): warning X3554: unknown attribute numthreads, or attribute invalid for this statement
-D:\Git Repos\3D-Projekt\ComputeShaderBloom.hlsl(6,39-78): error X3701: vs_2_0 does not support indexing resources
-  
-  compilation failed; no code produced
+﻿  main.cpp
+d:\git repos\3d-projekt\main.cpp(281): warning C4244: '=': conversion from 'float' to 'unsigned int', possible loss of data
+  Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe
+  Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.pdb (Full PDB)
