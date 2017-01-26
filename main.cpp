@@ -616,35 +616,7 @@ void CreateTexturesAndViews(){
 
 	gDevice->CreateShaderResourceView(LightShadingTex, &shaderResourceViewFromFirstPass, &gLightShadingPassSRV);
 
-	//-------------	Create Compute Shader Output 1
-	/*
-	D3D11_BUFFER_DESC ComputeShaderBufferDesc;
-	memset(&ComputeShaderBufferDesc, 0, sizeof(ComputeShaderBufferDesc));
-
-	ComputeShaderBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-	ComputeShaderBufferDesc.ByteWidth = 1280 * 720;
-	ComputeShaderBufferDesc.CPUAccessFlags = 0;
-	ComputeShaderBufferDesc.MiscFlags = 0;
-	ComputeShaderBufferDesc.StructureByteStride = 12;
-	ComputeShaderBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-
-	ID3D11Buffer* CSBufferPointer = nullptr;
-	gDevice->CreateBuffer(&ComputeShaderBufferDesc, nullptr, &CSBufferPointer);
-
-
-	D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc;
-	uav_desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			//DXGI_FORMAT_R32G32B32_UINT är FEL	- DXGI_FORMAT_R32G32B32A32_FLOAT borde funka?
-	uav_desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	uav_desc.Buffer.FirstElement = 0;
-	uav_desc.Buffer.Flags = 0;
-	uav_desc.Buffer.NumElements = 1024;
-
-	ID3D11UnorderedAccessView* UAVptr = nullptr;
-	gDevice->CreateUnorderedAccessView(CSBufferPointer, &uav_desc, &UAVptr);
-	
-	CSBufferPointer->Release();
-	*/
-	//-------------	Create Compute Shader Output 2
+	//-------------	Create Compute Shader Output
 
 	//create compute shader texture
 	D3D11_TEXTURE2D_DESC computeTextureDesc;
@@ -653,7 +625,7 @@ void CreateTexturesAndViews(){
 	computeTextureDesc.Height = 720;
 	computeTextureDesc.MipLevels = 1;
 	computeTextureDesc.ArraySize = 1;
-	computeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;	//funkar detta?
+	computeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;	//funkar detta? (borde det, ja)
 	computeTextureDesc.SampleDesc.Count = 1;
 	computeTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	computeTextureDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
@@ -1016,12 +988,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 void Render_pre(){
 	float clearColor[] = { 0, 0, 0, 1 };
 
-	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[0], clearColor);
-	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[1], clearColor);
-	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[2], clearColor);
-	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[3], clearColor);
-	gDeviceContext->ClearRenderTargetView(gLightShadingPassRTV, clearColor);
-	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);
+	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[0], clearColor);		//deferred 1 norm
+	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[1], clearColor);		//deferred 2 diffuse
+	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[2], clearColor);		//deferred 3 specular
+	gDeviceContext->ClearRenderTargetView(gFirstPassRTV[3], clearColor);		//deferred 4 pos
+	gDeviceContext->ClearRenderTargetView(gLightShadingPassRTV, clearColor);	//light shading
+	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);			//back buffer
+	gDeviceContext->ClearRenderTargetView(computeTextureRTV, clearColor);		//bloom
 
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
@@ -1096,11 +1069,11 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 }
 
 void RenderLightShadingPass(){
-	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);	//kan byta till LIST nen då krävs 6 drawcalls
+	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
 	gDeviceContext->IASetInputLayout(NULL);
 
-	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);	//riktiga
+	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
 
 	//--------------------
 
@@ -1156,6 +1129,10 @@ void ComputeBloom() {
 	//--------------------	cleanup
 	//ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
 	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+
+	//float red[] = { 1.0, 1.0, 0.0, 1.0 };
+	//gDeviceContext->ClearRenderTargetView(computeTextureRTV, red);	//does nothing... no red
+
 }
 
 void RenderFINAL() {
