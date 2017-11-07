@@ -504,7 +504,7 @@ void CreateShaders(){
 
 	//CREATE PIXEL SHADER FOR FINAL PASS
 	ID3DBlob* pPS1 = nullptr;
-	D3DCompileFromFile(L"Fragment.hlsl", nullptr, nullptr, "PS_main", "ps_4_0", 0, 0, &pPS1, nullptr);
+	D3DCompileFromFile(L"Fragment.hlsl", nullptr, nullptr, "PS_main", "ps_5_0", 0, 0, &pPS1, nullptr);
 
 	gDevice->CreatePixelShader(pPS1->GetBufferPointer(), pPS1->GetBufferSize(), nullptr, &gPixelShaderFinal);
 
@@ -632,7 +632,9 @@ void CreateTexturesAndViews(){
 	computeTextureDesc.CPUAccessFlags = 0;
 	computeTextureDesc.MiscFlags = 0;
 
-	gDevice->CreateTexture2D(&computeTextureDesc, NULL, &computeTexture);
+	if (hr = gDevice->CreateTexture2D(&computeTextureDesc, NULL, &computeTexture) != S_OK) {
+		MessageBox(NULL, L"Blob ERROR: CreateTexture2D()", L"Error", MB_OK);
+	}
 
 	//create render target view
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetDescCompute;
@@ -640,7 +642,9 @@ void CreateTexturesAndViews(){
 	renderTargetDescCompute.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	renderTargetDescCompute.Texture2D.MipSlice = 0;
 
-	gDevice->CreateRenderTargetView(computeTexture, &renderTargetDescCompute, &computeTextureRTV);
+	if (hr = gDevice->CreateRenderTargetView(computeTexture, &renderTargetDescCompute, &computeTextureRTV) != S_OK) {
+		MessageBox(NULL, L"Blob ERROR: CreateRenderTargetView()", L"Error", MB_OK);
+	}
 
 	//create shader resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewCompute;
@@ -649,7 +653,9 @@ void CreateTexturesAndViews(){
 	shaderResourceViewCompute.Texture2D.MostDetailedMip = 0;
 	shaderResourceViewCompute.Texture2D.MipLevels = 1;
 
-	gDevice->CreateShaderResourceView(computeTexture, &shaderResourceViewCompute, &computeTextureSRV);
+	if (hr = gDevice->CreateShaderResourceView(computeTexture, &shaderResourceViewCompute, &computeTextureSRV) != S_OK) {
+		MessageBox(NULL, L"Blob ERROR: CreateShaderResourceView()", L"Error", MB_OK);
+	}
 
 	//create unordered access view
 	D3D11_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewCompute;
@@ -657,7 +663,9 @@ void CreateTexturesAndViews(){
 	unorderedAccessViewCompute.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 	unorderedAccessViewCompute.Texture2D.MipSlice = 0;
 
-	hr = gDevice->CreateUnorderedAccessView(computeTexture, &unorderedAccessViewCompute, &computeTextureUAV);
+	if (hr = gDevice->CreateUnorderedAccessView(computeTexture, &unorderedAccessViewCompute, &computeTextureUAV) != S_OK) {
+		MessageBox(NULL, L"Blob ERROR: CreateUnorderedAccessView()", L"Error", MB_OK);
+	}
 }
 
 void CreateTriangleData(){
@@ -996,6 +1004,13 @@ void Render_pre(){
 	gDeviceContext->ClearRenderTargetView(gBackbufferRTV, clearColor);			//back buffer
 	gDeviceContext->ClearRenderTargetView(computeTextureRTV, clearColor);		//bloom
 
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
+
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
@@ -1013,8 +1028,6 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 	//--------------------
 
 	gDeviceContext->VSSetShader(gVertexShaderFirstPass,	 nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShaderFirstPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFirstPass, nullptr, 0);
 
@@ -1030,13 +1043,14 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 	gDeviceContext->PSSetShaderResources(0, 1, &texure);
 	gDeviceContext->PSSetConstantBuffers(0, 1, &MTL);
 
-	//--------------------
+	//-------------------- draw
 
-	gDeviceContext->Draw(draws, 0);	//DRAW
+	gDeviceContext->Draw(draws, 0);
 
 	//--------------------	cleanup
-	//ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 }
 
 void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
@@ -1050,22 +1064,18 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 	gDeviceContext->OMSetRenderTargets(0, nullptr, gDepthStencilView);
 
 	//--------------------
-
 	gDeviceContext->VSSetShader(gVertexShaderShadowMapping, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 
 	//--------------------
-
 	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//what object we are drawing
 	gDeviceContext->VSSetConstantBuffers(0, 1, &MatriserBuffer);
 	gDeviceContext->VSSetConstantBuffers(1, 1, &LightBuffer_1);
 
-	//--------------------
+	//-------------------- draw
+	gDeviceContext->Draw(draws, 0);
 
-	gDeviceContext->Draw(draws, 0);	//DRAW
+	//-------------------- cleanup
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 }
 
 void RenderLightShadingPass(){
@@ -1078,9 +1088,6 @@ void RenderLightShadingPass(){
 	//--------------------
 
 	gDeviceContext->VSSetShader(gVertexShaderLightShadingPass, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderLightShadingPass, nullptr, 0);
 
 	//--------------------
@@ -1098,25 +1105,15 @@ void RenderLightShadingPass(){
 	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
 	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);		//shadow mapping
 
-	//--------------------
-
-	gDeviceContext->Draw(3, 0);	//DRAW
+	//-------------------- draw
+	gDeviceContext->Draw(3, 0);
 
 	//--------------------	cleanup
-	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 }
 
 void ComputeBloom() {
-	//----- cleanup from RenderLightShadingPass		-	might not be necessary
-	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
-	//-----
-
-	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->CSSetShader(gComputeShaderBloom, nullptr, 0);
 
 	//--------------------
@@ -1124,15 +1121,12 @@ void ComputeBloom() {
 	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
 	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
 
-	gDeviceContext->Dispatch(32, 18, 1);	//DISPATCH	-	works with res 1280x720 (generates 40x40 blocks)
+	gDeviceContext->Dispatch(1, 1, 1);	//DISPATCH	-	(32, 18, 1) generates 40x40 blocks with res 1280x720
 
 	//--------------------	cleanup
-	//ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
-
-	//float red[] = { 1.0, 1.0, 0.0, 1.0 };
-	//gDeviceContext->ClearRenderTargetView(computeTextureRTV, red);	//does nothing... no red
-
+	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
+	gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 }
 
 void RenderFINAL() {
@@ -1150,22 +1144,20 @@ void RenderFINAL() {
 	//--------------------
 	
 	gDeviceContext->VSSetShader(gVertexShaderFinal, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
-	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
-	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()
+	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()			<--- FÅR INGEN INPUT!! FUNGERAR EJ
 
 	//--------------------
 
 	gDeviceContext->Draw(3, 0);	//DRAW
 
 	//--------------------	cleanup
-	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	//ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
+	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 }
 
 //-----

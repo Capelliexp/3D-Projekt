@@ -22,17 +22,17 @@
     <Filter Include="Source Files\Shaders\1 FirstPass">
       <UniqueIdentifier>{1fd6ef9a-2284-4c9a-a3d9-08f2452ee229}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\4 FinalPass">
-      <UniqueIdentifier>{1a7272bb-e178-463f-a367-582a89d7ba71}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Shaders\3 LightShadingPass">
       <UniqueIdentifier>{09e22e31-8ebe-4e11-b468-f083b248538c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Shaders\2 ShadowMappingPass">
       <UniqueIdentifier>{09e410d3-5b2e-4fd0-a1f5-f7da8246b544}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\5 ComputeShader">
+    <Filter Include="Source Files\Shaders\4 ComputeShader">
       <UniqueIdentifier>{8949fd0e-9c18-4246-a459-707bd804c7ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\5 FinalPass">
+      <UniqueIdentifier>{1a7272bb-e178-463f-a367-582a89d7ba71}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -54,10 +54,10 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Fragment.hlsl">
-      <Filter>Source Files\Shaders\4 FinalPass</Filter>
+      <Filter>Source Files\Shaders\5 FinalPass</Filter>
     </FxCompile>
     <FxCompile Include="Vertex.hlsl">
-      <Filter>Source Files\Shaders\4 FinalPass</Filter>
+      <Filter>Source Files\Shaders\5 FinalPass</Filter>
     </FxCompile>
     <FxCompile Include="VertexFirstPass.hlsl">
       <Filter>Source Files\Shaders\1 FirstPass</Filter>
@@ -78,7 +78,7 @@
       <Filter>Source Files\Shaders\2 ShadowMappingPass</Filter>
     </FxCompile>
     <FxCompile Include="ComputeShaderBloom.hlsl">
-      <Filter>Source Files\Shaders\5 ComputeShader</Filter>
+      <Filter>Source Files\Shaders\4 ComputeShader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
