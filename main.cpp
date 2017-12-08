@@ -567,7 +567,6 @@ void CreateTexturesAndViews(){
 
 	D3D11_TEXTURE2D_DESC textureDesc;
 	ZeroMemory(&textureDesc, sizeof(textureDesc));
-
 	textureDesc.Width = 1280;
 	textureDesc.Height = 720;
 	textureDesc.MipLevels = 1;
@@ -625,7 +624,7 @@ void CreateTexturesAndViews(){
 	computeTextureDesc.Height = 720;
 	computeTextureDesc.MipLevels = 1;
 	computeTextureDesc.ArraySize = 1;
-	computeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;	//funkar detta? (borde det, ja)
+	computeTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	computeTextureDesc.SampleDesc.Count = 1;
 	computeTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	computeTextureDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
@@ -636,7 +635,7 @@ void CreateTexturesAndViews(){
 		MessageBox(NULL, L"Blob ERROR: CreateTexture2D()", L"Error", MB_OK);
 	}
 
-	//create render target view
+	//create RTV
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetDescCompute;
 	renderTargetDescCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	renderTargetDescCompute.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
@@ -646,8 +645,9 @@ void CreateTexturesAndViews(){
 		MessageBox(NULL, L"Blob ERROR: CreateRenderTargetView()", L"Error", MB_OK);
 	}
 
-	//create shader resource view
+	//create SRV
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewCompute;
+	ZeroMemory(&shaderResourceViewCompute, sizeof(shaderResourceViewCompute));
 	shaderResourceViewCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	shaderResourceViewCompute.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	shaderResourceViewCompute.Texture2D.MostDetailedMip = 0;
@@ -657,7 +657,7 @@ void CreateTexturesAndViews(){
 		MessageBox(NULL, L"Blob ERROR: CreateShaderResourceView()", L"Error", MB_OK);
 	}
 
-	//create unordered access view
+	//create UAV
 	D3D11_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewCompute;
 	unorderedAccessViewCompute.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	unorderedAccessViewCompute.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
@@ -1119,8 +1119,8 @@ void ComputeBloom() {
 
 	//--------------------
 
-	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);	//rätt!
-	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	//rätt!
+	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);	//correct!
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	//correct!
 
 	int x, y, z;
 	if ((x = 40) > D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) x = D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
@@ -1133,7 +1133,7 @@ void ComputeBloom() {
 	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
 	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);
 	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
+	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
 	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 }
 
@@ -1147,8 +1147,9 @@ void RenderFINAL() {
 	gDeviceContext->VSSetShader(gVertexShaderFinal, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
 
-	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
-	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()
+	//gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
+	gDeviceContext->PSSetShaderResources(0, 1, &computeTextureSRV);		//result from ComputeBloom()
+	//gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
 
 	//--------------------
 
