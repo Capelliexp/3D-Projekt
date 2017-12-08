@@ -218,7 +218,7 @@ void CreateMatrixObjects(){
 	MatrixObject.WorldMatrix = XMMatrixIdentity();
 	MatrixObject.WorldMatrix = XMMatrixTranspose(MatrixObject.WorldMatrix);
 
-	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5,1,1 }, { 2.5,0,2.5 }, { 0,1,0 } );	//pos, look, up	- ändra även CurrentCamPos
+	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5, 1, 1 }, { 2.5, 0, 2.5 }, { 0, 1, 0 } );	//pos, look, up	- ändra även CurrentCamPos
 	MatrixObject.ViewMatrix = XMMatrixTranspose(MatrixObject.ViewMatrix);
 
 	MatrixObject.ProjectionMatrix = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ (ändra shadow calc)
@@ -1048,6 +1048,7 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 	gDeviceContext->Draw(draws, 0);
 
 	//--------------------	cleanup
+	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
@@ -1075,14 +1076,13 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 	gDeviceContext->Draw(draws, 0);
 
 	//-------------------- cleanup
+	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 }
 
 void RenderLightShadingPass(){
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
 	gDeviceContext->IASetInputLayout(NULL);
-
 	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
 
 	//--------------------
@@ -1109,6 +1109,7 @@ void RenderLightShadingPass(){
 	gDeviceContext->Draw(3, 0);
 
 	//--------------------	cleanup
+	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 }
@@ -1118,27 +1119,27 @@ void ComputeBloom() {
 
 	//--------------------
 
-	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
-	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
+	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);	//rätt!
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	//rätt!
 
-	gDeviceContext->Dispatch(1, 1, 1);	//DISPATCH	-	(32, 18, 1) generates 40x40 blocks with res 1280x720
+	int x, y, z;
+	if ((x = 40) > D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) x = D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+	if ((y = 40) > D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) y = D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+	if ((z = 1) > D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) z = D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+
+	gDeviceContext->Dispatch(x, y, z);	//40,40,1 blocks w. 32,18,1 threads per block = 1280x720
 
 	//--------------------	cleanup
+	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
+	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);
 	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
 	gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
 	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 }
 
 void RenderFINAL() {
-	//----- cleanup from ComputeBloom	-	might not be necessary
-	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
-	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);
-	//-----
-
 	gDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	gDeviceContext->IASetInputLayout(gVertexLayoutFinal);
-
 	gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);
 	
 	//--------------------
@@ -1147,7 +1148,7 @@ void RenderFINAL() {
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
-	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()			<--- FÅR INGEN INPUT!! FUNGERAR EJ
+	gDeviceContext->PSSetShaderResources(1, 1, &computeTextureSRV);		//result from ComputeBloom()
 
 	//--------------------
 

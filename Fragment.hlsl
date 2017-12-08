@@ -1,5 +1,5 @@
 Texture2D LightShadingTexture	: register(t0);
-Texture2D<float4> BloomTexture	: register(t1);	//<--- FÅR INGEN INPUT!
+Texture2D<float4> BloomTexture	: register(t1);	//<--- Kan inte läsa RWTexture2D som Texture2D?
 SamplerState sampAni;
 
 struct VS_OUT {
@@ -16,6 +16,6 @@ float4 PS_main(VS_OUT input) : SV_Target{
 		return float4(0.0f, 1.0f, 0.0f, 1.0f);
 	}*/
 
-	return float4(color1);
-	//return float4(color2);
+	//return float4(color1);
+	return float4(color2);
 }
