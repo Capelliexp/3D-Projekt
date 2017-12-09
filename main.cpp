@@ -7,6 +7,7 @@
 #include <DirectXMath.h>
 #include <Windows.h>
 #include <string>
+#include <Unknwn.h>
 
 #include "bth_image.h"
 #include "PlayerControl.h"
@@ -653,6 +654,8 @@ void CreateTexturesAndViews(){
 	shaderResourceViewCompute.Texture2D.MostDetailedMip = 0;
 	shaderResourceViewCompute.Texture2D.MipLevels = 1;
 
+	ZeroMemory(&computeTextureSRV, sizeof(computeTextureSRV));	//new - wrong?
+
 	if (hr = gDevice->CreateShaderResourceView(computeTexture, &shaderResourceViewCompute, &computeTextureSRV) != S_OK) {
 		MessageBox(NULL, L"Blob ERROR: CreateShaderResourceView()", L"Error", MB_OK);
 	}
@@ -1078,6 +1081,9 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 	//-------------------- cleanup
 	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
+
+	gDeviceContext->VSSetConstantBuffers(0, 0, nullptr);
+	gDeviceContext->VSSetConstantBuffers(1, 0, nullptr);
 }
 
 void RenderLightShadingPass(){
@@ -1130,11 +1136,12 @@ void ComputeBloom() {
 	gDeviceContext->Dispatch(x, y, z);	//40,40,1 blocks w. 32,18,1 threads per block = 1280x720
 
 	//--------------------	cleanup
-	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
-	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);
 	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
 	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
+
+	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
+	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);	//unbinding UAV?
+	//computeTextureUAV->Release();	//will cause crash. But this is required, no?
 }
 
 void RenderFINAL() {
@@ -1149,17 +1156,17 @@ void RenderFINAL() {
 
 	//gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
 	gDeviceContext->PSSetShaderResources(0, 1, &computeTextureSRV);		//result from ComputeBloom()
-	//gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
 
 	//--------------------
 
 	gDeviceContext->Draw(3, 0);	//DRAW
 
 	//--------------------	cleanup
-	//ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
+	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
 	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShaderResources(0, 0, nullptr);
 }
 
 //-----

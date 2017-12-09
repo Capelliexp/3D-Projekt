@@ -1,3 +1,2 @@
-﻿  main.cpp
-d:\git repos\3d-projekt\main.cpp(281): warning C4244: '=' : conversion from 'float' to 'unsigned int', possible loss of data
+﻿  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\Fragment.cso
   Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe

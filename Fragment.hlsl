@@ -1,9 +1,9 @@
 //Texture2D LightShadingTexture		: register(t0);
 //Texture2D BloomTexture1			: register(t0);	//<--- Kan inte läsa RWTexture2D som Texture2D?
 //RWTexture2D<float4> BloomTexture2	: register(u0);
+//SamplerState sampAni;
 
-Texture2D<float4> InputTex : register(t0);
-SamplerState sampAni;
+Texture2D InputTex : register(t0);
 
 struct VS_OUT {
 	float4 Pos : SV_Position;
@@ -11,7 +11,6 @@ struct VS_OUT {
 };
 
 float4 PS_main(VS_OUT input) : SV_Target{
-
 	/*float4 color1 = LightShadingTexture.Sample(sampAni, input.TexCoord).rgba;
 	return float4(color1);*/
 
