@@ -1136,12 +1136,13 @@ void ComputeBloom() {
 	gDeviceContext->Dispatch(x, y, z);	//40,40,1 blocks w. 32,18,1 threads per block = 1280x720
 
 	//--------------------	cleanup
-	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
 	gDeviceContext->CSSetShader(nullptr, nullptr, 0);
 
-	gDeviceContext->CSSetShaderResources(0, 0, nullptr);
-	gDeviceContext->CSSetUnorderedAccessViews(0, 0, nullptr, NULL);	//unbinding UAV?
-	//computeTextureUAV->Release();	//will cause crash. But this is required, no?
+	ID3D11ShaderResourceView* nullSRV[1] = { 0 };
+	gDeviceContext->CSSetShaderResources(0, 1, nullSRV);
+
+	ID3D11UnorderedAccessView* nullUAV[1] = { 0 };
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, nullUAV, 0);
 }
 
 void RenderFINAL() {
