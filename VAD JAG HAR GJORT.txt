@@ -4,6 +4,7 @@
 3. vill få shading i FragmenLightShadingPass att fungera...
 	A. Alla texturer skickar rätt data (tror jag)
 	B. float3 diffuse =  (255, 255, 255) * color.rgb * nDotL; ÄR FEL?!?
+		a. haha nej, det är FÖRUTOM den som är fel FML
 	C. Pointlight och Directional light fungerar, men inte spotlight...
 	D. Spotlight fungerar! Vad är nu fel med specular... allt lyser som en jävla julgran
 	E. ShadingPass fungerar! (obs bug, är kameran för nära objekt blir de svarta (specular fel?))
@@ -26,7 +27,7 @@
 5. Dags att få glow effect/gaussian filter att fungera
 	A. RenderDoc ser att röd ritas (men den är fucked, kanske fel res eller dispatch), kan dock inte läsa den i FinalPass
 		a. Löste problemet! Måste unbinda bufferfan efter dess Dispatch(), nu är det bara allt svårt kvar!
-		
+	B. Har nu en (isch) fungerande bloom-calc. Inte vacker, men gets the job done, förhoppningsvis...
 X1. Kolla varför programmet måste stoppas vid körning
 	A. Har tidigare stoppat vid CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor)
 		a. gör det efter shadows också
