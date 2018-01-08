@@ -64,17 +64,14 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	float3 diffuse = LightColor * color.rgb * nDotL;
 
 	// Calculate the specular term
-	/*float3 V = CamPosition - position;
-	float3 H = normalize(lightVector + V);
-	float3 specular = pow(saturate(dot(normal, H)), specular_power) * LightColor * specular_color.xyz * nDotL;*/
 	float3 camToPointVector = position - CamPosition;
-	float3 reflectionVector = reflect(camToPointVector, normal);
+	float3 reflectionVectorNormalized = normalize(reflect(camToPointVector, normal));
 
-	reflectionVector = normalize(reflectionVector);
 	float3 v = PosLight - position;
-	float3 d = dot(v, reflectionVector);
-	float3 closestPointToLight = position + reflectionVector * d;
-	float3 specular = saturate(LightColor * distance(closestPointToLight, PosLight) * 0.5);
+	float3 d = dot(v, reflectionVectorNormalized);
+	float3 closestPointToLight = position + reflectionVectorNormalized * d;
+	float dist = distance(closestPointToLight, PosLight);
+	float3 specular = (LightColor * saturate(1 - dist));
 
 	//Ambient
 	float3 ambient = color * 0.02;

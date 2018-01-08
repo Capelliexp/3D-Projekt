@@ -34,3 +34,5 @@ X1. Kolla varför programmet måste stoppas vid körning
 	A. Har tidigare stoppat vid CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor)
 		a. gör det efter shadows också
 X2. Kolla så alla typer av ljus fungerar (deferred rendering)
+	A. det är specular light term calc som gör att allt blir ljust när vi rör oss från center.
+	
