@@ -28,6 +28,8 @@
 	A. RenderDoc ser att röd ritas (men den är fucked, kanske fel res eller dispatch), kan dock inte läsa den i FinalPass
 		a. Löste problemet! Måste unbinda bufferfan efter dess Dispatch(), nu är det bara allt svårt kvar!
 	B. Har nu en (isch) fungerande bloom-calc. Inte vacker, men gets the job done, förhoppningsvis...
+		a. Den är lite... sne. Kollar nog inte pixlar på vänster sida
+		
 X1. Kolla varför programmet måste stoppas vid körning
 	A. Har tidigare stoppat vid CreateBuffer(&TriangleBufferDescSmall_OBJ, &FloorData, &gVertexBuffer_Floor)
 		a. gör det efter shadows också
