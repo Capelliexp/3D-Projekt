@@ -1,7 +1,7 @@
 Texture2D LightShadingTexture		: register(t0);
 RWTexture2D<float4> OutputTexture	: register(u0);
 
-#define TRIGGERPOINT 1.0
+#define TRIGGERPOINT 3.0
 #define BLEEDRATE 0.01
 #define DECLINE 0.001
 #define RANGE 5
@@ -45,4 +45,3 @@ void CS_main(uint3 dispatchThreadID : SV_DispatchThreadID){
 	//OutputTexture[uint2(xCoord, yCoord)] = startColor;
 	OutputTexture[uint2(xCoord, yCoord)] = finalColor;
 }
-

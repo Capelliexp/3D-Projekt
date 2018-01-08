@@ -38,48 +38,41 @@ struct VS_OUT {
 
 float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition, float shadowValue) {
 
-	float3 L;
+	float3 lightVector;
 	float attenuation = 1;
 
-	if (LightType != 1 && LightType != 2 && LightType != 3) {
-		return float3(0, 1, 0);	//green error
-	}
-
-	if (LightType == 1 || LightType == 3) {	//pointlight or spotlight
-											// Base the the light vector on the light position
-		L = PosLight.xyz - position;
+	if (LightType == 1 || LightType == 3) {	//pointlight or spotlight - base the the light vector on the light position
+		lightVector = PosLight.xyz - position;
 
 		//Calculate attenuation based on distance from the light source
-		float dist = length(L);
+		float dist = length(lightVector);
 		attenuation = max(0, 1.0f - (dist / LightRange));
-		L = L / dist;
+		lightVector = lightVector / dist;
 	}
-	else {	//directional light
-		L = -ViewLight.xyz;
+	else {	//directional light - lightVector is the direction of the light
+		lightVector = -ViewLight.xyz;
 	}
 
-	if (LightType == 3) {	//spotlight
-							// Also add in the spotlight attenuation factor
-		float rho = dot(-L, ViewLight.xyz);
+	if (LightType == 3) {	//spotlight - add in the spotlight attenuation factor
+		float rho = dot(-lightVector, ViewLight.xyz);
 		attenuation = attenuation * saturate((rho - SpotlightAngles.y) / (SpotlightAngles.x - SpotlightAngles.y));
 	}
 
-	float nDotL = dot(normal, L);	//(0.0, 1.0, 0.0), (0.5, 3.0, 0.5)
+	//calculate diffuse factor for the surface-to-light angle
+	float nDotL = dot(normal, lightVector);
 	nDotL = saturate(nDotL);
 	float3 diffuse = LightColor * color.rgb * nDotL;
 
 	// Calculate the specular term
 	float3 V = CamPosition - position;
-	float3 H = normalize(L + V);
+	float3 H = normalize(lightVector + V);
 	float3 specular = pow(saturate(dot(normal, H)), specular_power) * LightColor * specular_color.xyz * nDotL;
 
-	if (attenuation < 0) {
-		return float3(1, 0, 0);	//red error
-	}
+	//Ambient
+	float3 ambient = color * 0.02;
 
-	// Final value is the sum of the albedo and diffuse with attenuation applied
-	attenuation = (attenuation + 0.05) * (10 / 10.5);	//ambient
-	float3 shading = ((diffuse + specular) * shadowValue) * (attenuation);
+	//Final
+	float3 shading = ambient + (diffuse + specular) * shadowValue * attenuation;
 
 	return shading;
 }
@@ -91,33 +84,26 @@ float readShadowMap(float3 pixelPos3D) {
 	float4 newPos = mul(float4(pixelPos3D, 1.0f), mul(ViewMatrixLight, ProjectionMatrixLight));
 	newPos.xyz /= newPos.w;
 
-	//float2 textureCoordinates = (newPos.xy * float2(0.5f, -0.5f)) + float2(0.5f, 0.5f);	//wrong? opengl to directx
-
 	float2 textureCoordinates = float2((newPos.x / 2.0) + 0.5, (newPos.y / -2.0) + 0.5);
 
 	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r + 0.0001f;
 
 	if (depthValue < newPos.z)
-		return 0.1;
+		return 0.0;
 	else
-		return 1.0;
+		return 1.0;	//light strength
 
-	//depthValue = 1 - ((1 - depthValue) * 20);	//clearer darkness
-
-	//return depthValue;
-	//return returnValue;	//returnerar alltid 0
+	return depthValue;
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
 
 	float3 color = DiffuseAlbedoTexture.Sample(sampAni, input.TexCoord).rgb;
+	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
 	float3 specular_color = SpecularAlbedoTexture.Sample(sampAni, input.TexCoord).xyz;
 	float specular_power = SpecularAlbedoTexture.Sample(sampAni, input.TexCoord.xy).w;
 	float3 normal = NormalTexture.Sample(sampAni, input.TexCoord).xyz;
-	normal = (normal - 0.5) * 2;		//remove for demonstration purpose
-	float3 position = PositionTexture.Sample(sampAni, input.TexCoord).xyz;
-	//position = normalize(position);	//add for demonstration purposes
-	float3 shadowMap = ShadowMapTexture.Sample(sampAni, input.TexCoord).r;
+	normal = (normal - 0.5) * 2;
 
 	float shadowValue = readShadowMap(position);
 
