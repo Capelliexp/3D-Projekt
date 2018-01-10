@@ -17,18 +17,18 @@ struct PSOutput{
 };
 
 cbuffer Albido:register(b0){
-	float3 Kd;
-	float3 Ka;
-	float3 Ks;	//används
-	float Ns;	//används
-	int illum;
+	float3 Kd;	//diffuse reflectivity
+	float3 Ka;	//ambient reflectivity
+	float3 Ks;	//specular reflectivity
+	float Ns;	//specular exponent (higher = concentrated highlight)
+	int illum;	//illumination
 };
 
 PSOutput PS_main(in PSInput input) : SV_Target{
 	PSOutput output;
 
-	// Implementera objektets textur
-	float3 diffuseAlbedo = txDiffuse.Sample(sampAni, input.TexCoord).rgb;	//här borde Kd användas... eller?
+	//Sample object texture
+	float3 diffuseAlbedo = txDiffuse.Sample(sampAni, input.TexCoord).rgb;
 
 	float3 normal = normalize(input.NormalWS.xyz);
 	normal = (normal + 1) / 2;

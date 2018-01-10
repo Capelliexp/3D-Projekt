@@ -1,2 +1,7 @@
-﻿  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\GeometryFirstPass.cso
+﻿D:\Git Repos\3D-Projekt\FragmentFirstPass.hlsl(27,16-46): warning X3576: semantics in type overridden by variable/function or enclosing type
+  
+  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\FragmentFirstPass.cso
+  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\GeometryFirstPass.cso
+  main.cpp
+d:\git repos\3d-projekt\main.cpp(282): warning C4244: '=' : conversion from 'float' to 'unsigned int', possible loss of data
   Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe
