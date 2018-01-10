@@ -2,18 +2,18 @@ Texture2D NormalTexture			: register(t0);
 Texture2D DiffuseAlbedoTexture	: register(t1);
 Texture2D SpecularAlbedoTexture : register(t2);
 Texture2D PositionTexture		: register(t3);
-Texture2D ShadowMapTexture		: register(t4);	//shadow map
+Texture2D ShadowMapTexture		: register(t4);
 SamplerState sampAni;
 
 cbuffer light1:register(b0) {
 	matrix ViewMatrixLight;
 	matrix ProjectionMatrixLight;
-	float4 LightRange;		//1 variable
-	float4 PosLight;		//3 variables
-	float4 ViewLight;		//3 variables
-	float4 SpotlightAngles;	//2 variables
-	float4 LightColor;		//3 variables
-	uint LightType;			//1 variable
+	float4 LightRange;		//1 var
+	float4 PosLight;		//3 var
+	float4 ViewLight;		//3 var
+	float4 SpotlightAngles;	//2 var
+	float4 LightColor;		//3 var
+	uint LightType;			//1 var
 };
 
 cbuffer CamPos:register(b1) {
@@ -32,7 +32,7 @@ cbuffer Matrices:register(b3) {
 };
 
 struct VS_OUT {
-	float4 PositionQuad : SV_Position;	//position på pixel pga full screen quad
+	float4 PositionQuad : SV_Position;	//position on full screen quad
 	float2 TexCoord : TexCoord;
 };
 
@@ -57,7 +57,7 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 		float rho = dot(-lightVector, ViewLight.xyz);
 		attenuation = attenuation * saturate((rho - SpotlightAngles.y) / (SpotlightAngles.x - SpotlightAngles.y));
 	}
-
+	
 	//calculate diffuse factor for the surface-to-light angle
 	float nDotL = dot(normal, lightVector);
 	nDotL = saturate(nDotL);
@@ -68,8 +68,8 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	float3 reflectionVectorNormalized = normalize(reflect(camToPointVector, normal));
 	float3 v = PosLight - position;
 	float3 d = dot(v, reflectionVectorNormalized);
-	float3 closestPointToLight = position + reflectionVectorNormalized * d;
-	float dist = distance(closestPointToLight, PosLight);
+	float3 closestPointToLight = position + reflectionVectorNormalized * d;	//now we know the point on the ray that is closest to the light
+	float dist = distance(closestPointToLight, PosLight);	//calc the closest distance between the the ray and the light
 	float3 specular = LightColor * saturate(1.5 - dist);
 
 	//Ambient
@@ -92,12 +92,9 @@ float readShadowMap(float3 pixelPos3D) {
 
 	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r + 0.0001f;
 
-	if (depthValue < newPos.z)
-		return 0.0;
-	else
-		return 1.0;	//light strength
-
-	return depthValue;
+	//return a light strength
+	if (depthValue < newPos.z) return 0.0;
+	else return 1.0;
 }
 
 float4 PS_main(in VS_OUT input) : SV_Target{
@@ -111,10 +108,8 @@ float4 PS_main(in VS_OUT input) : SV_Target{
 
 	float shadowValue = readShadowMap(position);
 
-	float3 light1 = CalcLighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition, shadowValue);
+	float3 final = CalcLighting(LightRange.x, PosLight.xyz, ViewLight.xyz, SpotlightAngles.xy, LightColor.xyz, LightType, color, specular_color, specular_power, normal, position, CamPosition, shadowValue);
 
-	return float4(light1, 1.0f);
-	//return float4(shadowMap, 1.0f);
-	//return float4(light1.x, light1.y, shadowValue, 1.0f);
-	//return float4(shadowValue, shadowValue, shadowValue, 1.0f);
+	return float4(final, 1.0f);
+	//return float4((1 - (float3)ShadowMapTexture.Sample(sampAni, input.TexCoord).r)*3, 1.0f);	//demonstration purposes
 }
