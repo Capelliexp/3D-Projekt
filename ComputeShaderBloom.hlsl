@@ -4,7 +4,7 @@ RWTexture2D<float4> OutputTexture	: register(u0);
 #define TRIGGERPOINT 3.0
 #define BLEEDRATE 0.01
 #define DECLINE 0.001
-#define RANGE 5
+#define RANGE 7
 #define AREA RANGE*RANGE*4
 
 float TexelDist(const int2 orig, const int2 testTexel) {
@@ -18,7 +18,6 @@ float TexelDist(const int2 orig, const int2 testTexel) {
 void CS_main(uint3 dispatchThreadID : SV_DispatchThreadID){
 	uint xCoord = dispatchThreadID.x;
 	uint yCoord = dispatchThreadID.y;
-	//uint z = dispatchThreadID.z;
 
 	float4 startColor = LightShadingTexture[uint2(xCoord, yCoord)];
 	float4 finalColor = startColor;
@@ -28,7 +27,7 @@ void CS_main(uint3 dispatchThreadID : SV_DispatchThreadID){
 	int iter = 0;
 	for (int x1 = 0; x1 < 2*RANGE; ++x1) {
 		for (int y1 = 0; y1 < 2*RANGE; ++y1) {
-			texelColorArray[x1][y1] = LightShadingTexture[uint2(xCoord+x1, yCoord+y1)];
+			texelColorArray[x1][y1] = LightShadingTexture[uint2(xCoord+x1-RANGE, yCoord+y1-RANGE)];
 			++iter;
 		}
 	}
