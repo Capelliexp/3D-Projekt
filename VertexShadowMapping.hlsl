@@ -26,15 +26,10 @@ cbuffer light1:register(b1) {
 VSOutput VS_main(in VSInput input) {
 	VSOutput output = (VSOutput)0;
 
-	matrix all = mul(mul(WorldMatrix, ViewMatrixLight), ProjectionMatrixLight);
-	//all = mul(all, ProjectionMatrixLight);
+	matrix WVP = mul(mul(WorldMatrix, ViewMatrixLight), ProjectionMatrixLight);
 
 	output.Pos = float4(input.Pos, 1);
-	output.Pos = mul(output.Pos, all);
-
-	//output.Pos = mul(output.Pos, WorldMatrix);
-	//output.Pos = mul(output.Pos, ViewMatrixLight);
-	//output.Pos = mul(output.Pos, ProjectionMatrixLight);
+	output.Pos = mul(output.Pos, WVP);
 
 	return output;
 }
