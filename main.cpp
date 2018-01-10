@@ -27,32 +27,6 @@
 
 using namespace DirectX;
 
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ee415571(v=vs.85).aspx	DirectXMath Tutorial
-//http://mws.bykim.se/4-VertexBuffers.php	ByKim
-//http://www.rastertek.com/dx11tut04.html	enkla begrepp
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476896%28v=vs.85%29.aspx	hur man skapar en "constant buffer"
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476491(v=vs.85).aspx		VSSetConstantBuffers()
-//https://msdn.microsoft.com/en-us/library/windows/desktop/dn508285%28v=vs.85%29.aspx	"dynamic resources" / map - unmap
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476486%28v=vs.85%29.aspx	UpdateSubresource()
-//HRESULT hr = ...
-//Ctrl + M + O
-//https://msdn.microsoft.com/en-us/library/windows/desktop/bb205074%28v=vs.85%29.aspx	depth stencil
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476506%28v=vs.85%29.aspx	skapa depth stencil
-//http://www.gamedev.net/topic/624213-directx11-depth-buffer-problem-solved/			depth stencil forum
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476507(v=vs.85).aspx		CreateDepthStencilView (Måste användas)
-//https://msdn.microsoft.com/en-us/library/windows/desktop/bb205120(v=vs.85).aspx		depth test explanation
-
-//http://www.gamedev.net/topic/639136-d3d11-simple-textured-triangle-wont-draw/			textur forum
-//http://www.rastertek.com/dx11tut05.html												textur rastertek
-//https://msdn.microsoft.com/en-us/library/windows/desktop/bb509694(v=vs.85).aspx		load()
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476220(v=vs.85).aspx		Subresource
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476253(v=vs.85).aspx		2D-texture struct
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476521(v=vs.85).aspx		CreateTexture2D()
-//C:\Users\Capelli\Dropbox\Skola\Programmering\3D Föreläsningar\Powerpoints\7			texturing.pdf
-
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476904(v=vs.85).aspx	Hur man läser in textur
-//https://msdn.microsoft.com/en-us/library/windows/desktop/ff476286(v=vs.85).aspx	CreateTextureFromFile()
-
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
 
@@ -71,14 +45,14 @@ ID3D11DeviceContext* gDeviceContext = nullptr;
 ID3D11Buffer* gVertexBuffer_Floor = nullptr;
 ID3D11Buffer* gVertexBuffer_Light = nullptr;
 ID3D11Buffer* gVertexBuffer_Box = nullptr;
-ID3D11Buffer* gVertexBuffer_Boll = nullptr;
+ID3D11Buffer* gVertexBuffer_Ball = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake1 = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake2 = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake3 = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake4 = nullptr;
 
 ID3D11Buffer* MTLBuffer_Box = nullptr;
-ID3D11Buffer* gConstantBuffer_Boll = nullptr;
+ID3D11Buffer* gConstantBuffer_Ball = nullptr;
 ID3D11Buffer* gVertexBuffer_lightSource = nullptr;
 ID3D11Buffer* MTLBuffer_Drake = nullptr;
 
@@ -127,30 +101,30 @@ ID3D11ComputeShader* gComputeShaderBloom = nullptr;
 ID3D11RenderTargetView*	gBackbufferRTV = nullptr;	//screen output
 ID3D11DepthStencilView*	gDepthStencilView;			//depth test
 
-ID3D11RenderTargetView*		gFirstPassRTV[4];	//shader output
-ID3D11ShaderResourceView*	gFirstPassSRV[4];	//shader input
-ID3D11Texture2D*			FirstPassTex[4];			//texture for RTV and SRV
+ID3D11Texture2D*			FirstPassTex[4];		//4 textures for deferred rendering
+ID3D11RenderTargetView*		gFirstPassRTV[4];		//shader output
+ID3D11ShaderResourceView*	gFirstPassSRV[4];		//shader input
 
-ID3D11RenderTargetView*		gLightShadingPassRTV;	//result of LightShadingPass
+ID3D11Texture2D*			LightShadingTex;		//result of LightShadingPass
+ID3D11RenderTargetView*		gLightShadingPassRTV;
 ID3D11ShaderResourceView*	gLightShadingPassSRV;
-ID3D11Texture2D*			LightShadingTex;
 
-ID3D11RenderTargetView*		computeTextureRTV;	//bloom compute shader
+ID3D11Texture2D*			computeTexture;			//bloom compute shader
+ID3D11RenderTargetView*		computeTextureRTV;
 ID3D11UnorderedAccessView*	computeTextureUAV;
-ID3D11ShaderResourceView*	computeTextureSRV;	//for pixel shader in FINAL
-ID3D11Texture2D*			computeTexture;
+ID3D11ShaderResourceView*	computeTextureSRV;
 
 //-----------------------
 
-ID3D11RasterizerState*	RastState = nullptr;	//till rasterizer
+ID3D11RasterizerState*	RastState = nullptr;	//for rasterizer
 ID3D11DepthStencilState* pDSState = nullptr;
 
 LARGE_INTEGER TotalFrames = { 0 };
 __int64 FPS = { 0 };
 
-POINT mouseInfoNew;	//musen rörelse under framen
+POINT mouseInfoNew;	//mouse movement during frame
 
-XMVECTOR CurrentCamPos;	//kamerans nuvarande position
+XMVECTOR CurrentCamPos;	//current position of the camera in 3D
 
 HRESULT hr;	//errorblob
 
@@ -164,7 +138,7 @@ bool LastFrameESC = false;
 float ViewPortWidth;
 float ViewPortHeight;
 
-//-----------------------	Funktioner
+//-----------------------	Function declarations (bcs who needs header files? god this project is ugly!)
 
 void Update();
 void Keyboard();
@@ -179,22 +153,22 @@ void RenderLightShadingPass();
 void ComputeBloom();
 void RenderFINAL();
 
-//-----------------------	Light-structen
+//-----------------------	Light struct
 
-struct LightStruct{		//multiple of 16!
-	XMMATRIX ViewMatrixLight;		//64-byte
-	XMMATRIX ProjectionMatrixLight;	//64-byte
-	XMVECTOR LightRange;			//16-byte
-	XMVECTOR PosLight;				//16-byte
-	XMVECTOR ViewLight;				//16-byte
-	XMVECTOR SpotlightAngles;		//16-byte
-	XMVECTOR LightColor;			//16-byte
-	unsigned int LightType;			//4-byte	//1 = pointlight, 2 = directional light, 3 = spotlight
+struct LightStruct{
+	XMMATRIX ViewMatrixLight;		
+	XMMATRIX ProjectionMatrixLight;	
+	XMVECTOR LightRange;			
+	XMVECTOR PosLight;				
+	XMVECTOR ViewLight;				
+	XMVECTOR SpotlightAngles;		
+	XMVECTOR LightColor;			
+	unsigned int LightType;	//1 = pointlight, 2 = directional light, 3 = spotlight
 };
 
 LightStruct LightObject1;
 
-//-----------------------	WVP Matrisen
+//-----------------------	WVP Matrices
 
 struct WVPI_Matriser {
 	XMMATRIX WorldMatrix;		//global position
@@ -204,7 +178,7 @@ struct WVPI_Matriser {
 
 WVPI_Matriser MatrixObject;
 
-//-----------------------	Shadow-calcs
+//-----------------------	struct w. data required for shadow calcs
 
 struct LightShadingShadows {
 	XMMATRIX CameraViewInverseMatrix;		//64-byte
@@ -219,10 +193,10 @@ void CreateMatrixObjects(){
 	MatrixObject.WorldMatrix = XMMatrixIdentity();
 	MatrixObject.WorldMatrix = XMMatrixTranspose(MatrixObject.WorldMatrix);
 
-	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5, 1, 1 }, { 2.5, 0, 2.5 }, { 0, 1, 0 } );	//pos, look, up	- ändra även CurrentCamPos
+	MatrixObject.ViewMatrix = XMMatrixLookAtLH( { 2.5, 1, 1 }, { 2.5, 0, 2.5 }, { 0, 1, 0 } );	//pos, look, up
 	MatrixObject.ViewMatrix = XMMatrixTranspose(MatrixObject.ViewMatrix);
 
-	MatrixObject.ProjectionMatrix = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ (ändra shadow calc)
+	MatrixObject.ProjectionMatrix = XMMatrixPerspectiveFovLH(1.4f, 1.777f, 0.1f, 100.0f);	//FovAngleY, AspectRatio, NearZ, FarZ
 	MatrixObject.ProjectionMatrix = XMMatrixTranspose(MatrixObject.ProjectionMatrix);
 
 	//----------------------------------------------------------
@@ -275,10 +249,10 @@ void CreateLightObjects() {
 	//---
 
 	LightObject1.LightRange = { LightRange, 0.0, 0.0, 0.0 };								//1
-	LightObject1.PosLight = { PosLight[0], PosLight[1], PosLight[2] , 0.0 };				//3	//behövs ej, finns i matrisen
-	LightObject1.ViewLight = { ViewLight[0], ViewLight[1], ViewLight[2], 0.0 };				//3	//behövs ej, finns i matrisen
+	LightObject1.PosLight = { PosLight[0], PosLight[1], PosLight[2] , 0.0 };				//3
+	LightObject1.ViewLight = { ViewLight[0], ViewLight[1], ViewLight[2], 0.0 };				//3
 	LightObject1.SpotlightAngles = { SpotlightAngles[0], SpotlightAngles[1], 0.0f, 0.0f };	//2
-	LightObject1.LightColor = { LightColor[0], LightColor[1] , LightColor[2], 0.0 };		//3	rgb
+	LightObject1.LightColor = { LightColor[0], LightColor[1] , LightColor[2], 0.0 };		//3
 	LightObject1.LightType = LightType;														//1	//1 = pointlight, 2 = directional light, 3 = spotlight
 
 	//---
@@ -329,7 +303,7 @@ void CreateOtherBuffers(){
 }
 
 void CreateRastarizer() {
-	D3D11_RASTERIZER_DESC Rast;		//maybe use D3D11_RASTERIZER_DESC1 ???
+	D3D11_RASTERIZER_DESC Rast;
 	Rast.FillMode = D3D11_FILL_SOLID;
 	Rast.CullMode = D3D11_CULL_NONE;	//NONE / BACK / FRONT
 	Rast.FrontCounterClockwise = FALSE;
@@ -339,9 +313,9 @@ void CreateRastarizer() {
 	Rast.DepthClipEnable = TRUE;
 	Rast.ScissorEnable = FALSE;
 	Rast.MultisampleEnable = FALSE;
-	Rast.AntialiasedLineEnable = FALSE;	//om MultisampleEnable är TRUE måste denna vara FALSE, olika algoritmer for AA.
+	Rast.AntialiasedLineEnable = FALSE;	//if MultisampleEnable is TRUE, then this must be FALSE, different methods of AA.
 
-	gDevice->CreateRasterizerState(&Rast, &RastState);	//denna fungerar ej (gör den inte ???)
+	gDevice->CreateRasterizerState(&Rast, &RastState);
 
 	gDeviceContext->RSSetState(RastState);
 }
@@ -356,19 +330,13 @@ void CreateDepth() {
 	descDepth.Height = (INT)ViewPortHeight;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;	//DXGI_FORMAT_D24_UNORM_S8_UINT / DXGI_FORMAT_R32_TYPELESS / DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R24G8_TYPELESS
+	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
 	descDepth.SampleDesc.Count = 1;
 	descDepth.SampleDesc.Quality = 0;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 	descDepth.CPUAccessFlags = 0;
-	descDepth.MiscFlags = 0;                         // the window to be used
-
-	//D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-	//descDSV.Format = descDepth.Format;	//DXGI_FORMAT_D32_ FLOAT / DXGI_FORMAT_D24_UNORM_S8_UINT
-	//descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	//descDSV.Texture2D.MipSlice = 0;
-	//descDSV.Flags = 0;
+	descDepth.MiscFlags = 0;
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
 	ZeroMemory(&descDSV, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
@@ -376,12 +344,6 @@ void CreateDepth() {
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
 	descDSV.Flags = 0;
-
-	//D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	//srvDesc.Format = descDepth.Format;	//DXGI_FORMAT_R24_UNORM_X8_TYPELESS / DXGI_FORMAT_R32_FLOAT / DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-	//srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	//srvDesc.Texture2D.MipLevels = descDepth.MipLevels;
-	//srvDesc.Texture2D.MostDetailedMip = 0;
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
 	ZeroMemory(&srDesc, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
@@ -391,9 +353,10 @@ void CreateDepth() {
 	srDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateTexture2D(&descDepth, NULL, &depthTex1);
-	checkErrorBlob(hr);	//kollar om CreateTexture2D() returnerar ett error
+	checkErrorBlob(hr);
+
 	hr = gDevice->CreateDepthStencilView(depthTex1, &descDSV, &gDepthStencilView);
-	hr = gDevice->CreateShaderResourceView(depthTex1, &srDesc, &gShadowView);		//textur så vi kan se resultatet, shadow mapping
+	hr = gDevice->CreateShaderResourceView(depthTex1, &srDesc, &gShadowView);
 
 	depthTex1->Release();
 }
@@ -764,13 +727,13 @@ void CreateTriangleData(){
 	LightData.pSysMem = light;
 	gDevice->CreateBuffer(&TriangleBufferDescSmall_OBJ, &LightData, &gVertexBuffer_Light);
 
-	//-----------------------------------------------	Boll
+	//-----------------------------------------------	Ball
 
-	OBJFormat* Boll = new OBJFormat[2280];
-	MTLFormat* BollAlbedo = new MTLFormat[1];
+	OBJFormat* Ball = new OBJFormat[2280];
+	MTLFormat* BallAlbedo = new MTLFormat[1];
 
-	readOBJ(Boll, "OBJs & Texturs/Box & Boll/sphere1.obj", 1.0f, 1.0f, 2.0f, -2.0f);
-	readMTL(BollAlbedo, "OBJs & Texturs/Box & Boll/sphere1.mtl");
+	readOBJ(Ball, "OBJs & Texturs/Box & Boll/sphere1.obj", 1.0f, 1.0f, 2.0f, -2.0f);
+	readMTL(BallAlbedo, "OBJs & Texturs/Box & Boll/sphere1.mtl");
 
 	D3D11_BUFFER_DESC TriangleBufferDescBig_OBJ;
 	memset(&TriangleBufferDescBig_OBJ, 0, sizeof(TriangleBufferDescBig_OBJ));
@@ -778,13 +741,13 @@ void CreateTriangleData(){
 	TriangleBufferDescBig_OBJ.Usage = D3D11_USAGE_DEFAULT;
 	TriangleBufferDescBig_OBJ.ByteWidth = sizeof(OBJFormat) * 2280;
 
-	D3D11_SUBRESOURCE_DATA BollData;
-	BollData.pSysMem = Boll;
-	gDevice->CreateBuffer(&TriangleBufferDescBig_OBJ, &BollData, &gVertexBuffer_Boll);
+	D3D11_SUBRESOURCE_DATA BallData;
+	BallData.pSysMem = Ball;
+	gDevice->CreateBuffer(&TriangleBufferDescBig_OBJ, &BallData, &gVertexBuffer_Ball);
 
-	D3D11_SUBRESOURCE_DATA BollData_MTL;
-	BollData_MTL.pSysMem = BollAlbedo;
-	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &BollData_MTL, &gConstantBuffer_Boll);
+	D3D11_SUBRESOURCE_DATA BallData_MTL;
+	BallData_MTL.pSysMem = BallAlbedo;
+	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &BallData_MTL, &gConstantBuffer_Ball);
 
 	//-----------------------------------------------	Ljuskälla
 
@@ -819,55 +782,51 @@ void CreateTriangleData(){
 	DrakeData_MTL.pSysMem = DrakeAlbedo;
 	gDevice->CreateBuffer(&TriangleBufferDescNormal_MTL, &DrakeData_MTL, &MTLBuffer_Drake);
 
-	////-----------------------------------------------	Dragon 2
+	//MORE DRAGONS!
+	/*
+	//-----------------------------------------------	Dragon 2
 
-	//OBJFormat* Drake2 = new OBJFormat[231288];
-	//MTLFormat* DrakeAlbedo2 = new MTLFormat[1];
+	OBJFormat* Drake2 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo2 = new MTLFormat[1];
 
-	//readOBJ(Drake2, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 3.0f, 0.7f, 0.0f);
+	readOBJ(Drake2, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 3.0f, 0.7f, 0.0f);
 
-	//D3D11_SUBRESOURCE_DATA DrakeData2;
-	//DrakeData2.pSysMem = Drake2;
-	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData2, &gVertexBuffer_Drake2);
+	D3D11_SUBRESOURCE_DATA DrakeData2;
+	DrakeData2.pSysMem = Drake2;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData2, &gVertexBuffer_Drake2);
 
-	////-----------------------------------------------	Dragon 3
+	//-----------------------------------------------	Dragon 3
 
-	//OBJFormat* Drake3 = new OBJFormat[231288];
-	//MTLFormat* DrakeAlbedo3 = new MTLFormat[1];
+	OBJFormat* Drake3 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo3 = new MTLFormat[1];
 
-	//readOBJ(Drake3, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, -3.0f);
+	readOBJ(Drake3, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, 0.0f, 0.7f, -3.0f);
 
-	//D3D11_SUBRESOURCE_DATA DrakeData3;
-	//DrakeData3.pSysMem = Drake3;
-	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData3, &gVertexBuffer_Drake3);
+	D3D11_SUBRESOURCE_DATA DrakeData3;
+	DrakeData3.pSysMem = Drake3;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData3, &gVertexBuffer_Drake3);
 
-	////-----------------------------------------------	Dragon 4
+	//-----------------------------------------------	Dragon 4
 
-	//OBJFormat* Drake4 = new OBJFormat[231288];
-	//MTLFormat* DrakeAlbedo4 = new MTLFormat[1];
+	OBJFormat* Drake4 = new OBJFormat[231288];
+	MTLFormat* DrakeAlbedo4 = new MTLFormat[1];
 
-	//readOBJ(Drake4, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, -3.0f, 0.7f, 0.0f);
+	readOBJ(Drake4, "OBJs & Texturs/drake/Figurine Dragon N170112.obj", 0.01f, -3.0f, 0.7f, 0.0f);
 
-	//D3D11_SUBRESOURCE_DATA DrakeData4;
-	//DrakeData4.pSysMem = Drake4;
-	//gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData4, &gVertexBuffer_Drake4);
+	D3D11_SUBRESOURCE_DATA DrakeData4;
+	DrakeData4.pSysMem = Drake4;
+	gDevice->CreateBuffer(&TriangleBufferDescDrake_OBJ, &DrakeData4, &gVertexBuffer_Drake4);
+	*/
 }
 
 void SetViewport(){
 	D3D11_VIEWPORT viewport[1];
-	viewport[0].Width = ViewPortWidth = 1280.0f;	//for normal window
+	viewport[0].Width = ViewPortWidth = 1280.0f;
 	viewport[0].Height = ViewPortHeight = 720.0f;
 	viewport[0].MinDepth = 0.0f;
 	viewport[0].MaxDepth = 1.0f;
 	viewport[0].TopLeftX = 0;
 	viewport[0].TopLeftY = 0;
-
-	//viewport[1].Width = ViewPortWidth = 2048.0f;	//for shadow mapp ???
-	//viewport[1].Height = ViewPortHeight = 2048.0f;
-	//viewport[1].MinDepth = 0.0f;
-	//viewport[1].MaxDepth = 1.0f;
-	//viewport[1].TopLeftX = 0;
-	//viewport[1].TopLeftY = 0;
 
 	gDeviceContext->RSSetViewports(1, viewport);
 }
@@ -886,7 +845,7 @@ void SetScissor() {
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
 	MSG msg = { 0 };
-	HWND wndHandle = InitWindow(hInstance);	//Skapar fönstret
+	HWND wndHandle = InitWindow(hInstance);		//Skapar fönstret
 	HWND wndHandle2 = InitWindow(hInstance);	//Skapar fönstret
 
 	if (wndHandle){
@@ -922,27 +881,28 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				{
 					RenderFirstPass(gVertexBuffer_Floor, nullptr, 6, gTextureView_Box);
-					//RenderFirstPass(gVertexBuffer_Light, nullptr, 6, gTextureView_BTH);
 					RenderFirstPass(gVertexBuffer_Box, MTLBuffer_Box, 36, gTextureView_Box);
-					RenderFirstPass(gVertexBuffer_Boll, gConstantBuffer_Boll, 2280, gTextureView_BTH);
-					//RenderFirstPass(gVertexBuffer_lightSource, gConstantBuffer_Boll, 2280, gTextureView_BTH);	//obs! ljuset är i mitten av bollen... 
+					RenderFirstPass(gVertexBuffer_Ball, gConstantBuffer_Ball, 2280, gTextureView_BTH);
 					RenderFirstPass(gVertexBuffer_Drake1, MTLBuffer_Drake, 231288, gTextureView_BTH);
-					//RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
-					//RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
-					//RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);
+
+					//MORE DRAGONS!
+					/*RenderFirstPass(gVertexBuffer_Drake2, MTLBuffer_Drake, 231288, gTextureView_BTH);
+					RenderFirstPass(gVertexBuffer_Drake3, MTLBuffer_Drake, 231288, gTextureView_BTH);
+					RenderFirstPass(gVertexBuffer_Drake4, MTLBuffer_Drake, 231288, gTextureView_BTH);*/
 				}
 
 				gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 				{
 					RenderShadowMapping(gVertexBuffer_Floor, 6);
-					//RenderShadowMapping(gVertexBuffer_Light, 6);
 					RenderShadowMapping(gVertexBuffer_Box, 36);
-					RenderShadowMapping(gVertexBuffer_Boll, 2280);
+					RenderShadowMapping(gVertexBuffer_Ball, 2280);
 					RenderShadowMapping(gVertexBuffer_Drake1, 231288);
-					//RenderShadowMapping(gVertexBuffer_Drake2, 231288);
-					//RenderShadowMapping(gVertexBuffer_Drake3, 231288);
-					//RenderShadowMapping(gVertexBuffer_Drake4, 231288);
+
+					//MORE DRAGONS!
+					/*RenderShadowMapping(gVertexBuffer_Drake2, 231288);
+					RenderShadowMapping(gVertexBuffer_Drake3, 231288);
+					RenderShadowMapping(gVertexBuffer_Drake4, 231288);*/
 				}
 
 				RenderLightShadingPass();
@@ -955,22 +915,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			}
 		}
 
-		//LÄGG TILL FLER OBJ:S HÄR
+		//RELEASE OBJs
 		gVertexBuffer_Floor->Release();
-		//gVertexBuffer_Light->Release();
 		gVertexBuffer_Box->Release();
-		gVertexBuffer_Boll->Release();
-		//gVertexBuffer_lightSource->Release();
+		gVertexBuffer_Ball->Release();
 		gVertexBuffer_Drake1->Release();
-		//gVertexBuffer_Drake2->Release();
-		//gVertexBuffer_Drake3->Release();
-		//gVertexBuffer_Drake4->Release();
+		/*gVertexBuffer_Drake2->Release();
+		gVertexBuffer_Drake3->Release();
+		gVertexBuffer_Drake4->Release();*/
 
-		MTLBuffer_Box->Release();		//LÄGG TILL FLER MTL:ER HÄR
-		gConstantBuffer_Boll->Release();
+		//RELEASE MTLs
+		MTLBuffer_Box->Release();
+		gConstantBuffer_Ball->Release();
 		MTLBuffer_Drake->Release();
 
 		//-----
+
 		gVertexLayoutFinal->Release();
 		gVertexLayoutFirstPass->Release();
 
@@ -1022,21 +982,16 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	gDeviceContext->IASetInputLayout(gVertexLayoutFirstPass);
-
 	gDeviceContext->OMSetRenderTargets(4, gFirstPassRTV, gDepthStencilView);
-	//gDeviceContext->OMSetDepthStencilState(NULL, 0);
 
-	//--------------------
-
+	//shaders
 	gDeviceContext->VSSetShader(gVertexShaderFirstPass,	 nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShaderFirstPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFirstPass, nullptr, 0);
 
 	//--------------------
-
-	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//what object we are drawing
+	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);
 
 	gDeviceContext->VSSetConstantBuffers(0, 1, &MatriserBuffer);
 
@@ -1045,12 +1000,11 @@ void RenderFirstPass(ID3D11Buffer* OBJ, ID3D11Buffer* MTL, int draws, ID3D11Shad
 
 	gDeviceContext->PSSetShaderResources(0, 1, &texure);
 	gDeviceContext->PSSetConstantBuffers(0, 1, &MTL);
+	//--------------------
 
-	//-------------------- draw
+	gDeviceContext->Draw(draws, 0);	//draw
 
-	gDeviceContext->Draw(draws, 0);
-
-	//--------------------	cleanup
+	//cleanup
 	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
@@ -1067,18 +1021,16 @@ void RenderShadowMapping(ID3D11Buffer* OBJ, int draws){
 
 	gDeviceContext->OMSetRenderTargets(0, nullptr, gDepthStencilView);
 
-	//--------------------
 	gDeviceContext->VSSetShader(gVertexShaderShadowMapping, nullptr, 0);
 
-	//--------------------
 	gDeviceContext->IASetVertexBuffers(0, 1, &OBJ, &vertexSize, &offset);	//what object we are drawing
 	gDeviceContext->VSSetConstantBuffers(0, 1, &MatriserBuffer);
 	gDeviceContext->VSSetConstantBuffers(1, 1, &LightBuffer_1);
 
-	//-------------------- draw
+	//draw
 	gDeviceContext->Draw(draws, 0);
 
-	//-------------------- cleanup
+	//cleanup
 	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 
@@ -1091,13 +1043,11 @@ void RenderLightShadingPass(){
 	gDeviceContext->IASetInputLayout(NULL);
 	gDeviceContext->OMSetRenderTargets(1, &gLightShadingPassRTV, nullptr);
 
-	//--------------------
-
+	//shaders
 	gDeviceContext->VSSetShader(gVertexShaderLightShadingPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderLightShadingPass, nullptr, 0);
 
 	//--------------------
-
 	gDeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
 
 	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//light
@@ -1110,11 +1060,11 @@ void RenderLightShadingPass(){
 	gDeviceContext->PSSetShaderResources(2, 1, &gFirstPassSRV[2]);
 	gDeviceContext->PSSetShaderResources(3, 1, &gFirstPassSRV[3]);
 	gDeviceContext->PSSetShaderResources(4, 1, &gShadowView);		//shadow mapping
+	//--------------------
+	
+	gDeviceContext->Draw(3, 0);	//draw
 
-	//-------------------- draw
-	gDeviceContext->Draw(3, 0);
-
-	//--------------------	cleanup
+	//cleanup
 	gDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
@@ -1125,8 +1075,8 @@ void ComputeBloom() {
 
 	//--------------------
 
-	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);	//correct!
-	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);	//correct!
+	gDeviceContext->CSSetShaderResources(0, 1, &gLightShadingPassSRV);
+	gDeviceContext->CSSetUnorderedAccessViews(0, 1, &computeTextureUAV, NULL);
 
 	int x, y, z;
 	if ((x = 40) > D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) x = D3D11_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
@@ -1150,21 +1100,16 @@ void RenderFINAL() {
 	gDeviceContext->IASetInputLayout(gVertexLayoutFinal);
 	gDeviceContext->OMSetRenderTargets(1, &gBackbufferRTV, nullptr);
 	
-	//--------------------
-	
+	//shaders
 	gDeviceContext->VSSetShader(gVertexShaderFinal, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderFinal, nullptr, 0);
 
-	//gDeviceContext->PSSetShaderResources(0, 1, &gLightShadingPassSRV);	//result from RenderLightShadingPass()
 	gDeviceContext->PSSetShaderResources(0, 1, &computeTextureSRV);		//result from ComputeBloom()
 
-	//--------------------
+	gDeviceContext->Draw(3, 0);	//draw
 
-	gDeviceContext->Draw(3, 0);	//DRAW
-
-	//--------------------	cleanup
+	//cleanup
 	ID3D11ShaderResourceView* srvs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-	//gDeviceContext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, srvs);
 	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShaderResources(0, 0, nullptr);
@@ -1259,13 +1204,11 @@ HRESULT CreateDirect3DContext(HWND wndHandle){
 //-------
 
 void Clock(){
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/ms644904(v=vs.85).aspx
-
 	LARGE_INTEGER OldClock = TotalFrames;
 
 	QueryPerformanceCounter(&TotalFrames);
 
-	FPS = TotalFrames.QuadPart - OldClock.QuadPart;	//fungerar ej ???
+	FPS = TotalFrames.QuadPart - OldClock.QuadPart;
 }
 
 void Update(){
@@ -1302,9 +1245,6 @@ void Update(){
 }
 
 void Keyboard(){
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/ms646293(v=vs.85).aspx
-
 	if (GetAsyncKeyState('W') != 0) {			//W
 		Forward(FPS, &MatrixObject.ViewMatrix, &CurrentCamPos);
 	}
@@ -1329,7 +1269,6 @@ void Keyboard(){
 	if (GetAsyncKeyState('E') != 0) {			//E
 		Use(FPS, &MatrixObject.ViewMatrix, &CurrentCamPos);
 	}
-
 	if (GetAsyncKeyState(VK_LSHIFT) != 0) {		//Left Shift
 		Down(FPS, &MatrixObject.ViewMatrix, &CurrentCamPos);
 	}
@@ -1337,19 +1276,13 @@ void Keyboard(){
 }
 
 void Mouse(){
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/ms648394(v=vs.85).aspx
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/ms648390(v=vs.85).aspx
-	//https://msdn.microsoft.com/en-us/library/windows/desktop/dd162952(v=vs.85).aspx
-	//http://www.gamedev.net/topic/651600-camera-rotation-in-dx11/ww
-
-
 	if ((GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == false && LastFrameESC == false) ||
-		(GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == true && LastFrameESC == true)) {			//E
+		(GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == true && LastFrameESC == true)) {
 		MouseMoveESC = true;
 		LastFrameESC = true;
 	}
-	else if ((GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == true && LastFrameESC == false) ||
-		(GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == false && LastFrameESC == true)) {			//E
+	else if ((GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == true && LastFrameESC == false) || 
+		(GetAsyncKeyState(VK_ESCAPE) != 0 && MouseMoveESC == false && LastFrameESC == true)) {
 		MouseMoveESC = false;
 		LastFrameESC = true;
 		SetCursorPos(960, 540);
@@ -1358,7 +1291,6 @@ void Mouse(){
 	if (MouseMoveESC == false){
 		GetCursorPos(&mouseInfoNew);
 		mouseMovement(mouseInfoNew, &MatrixObject.ViewMatrix);
-		//mouseMovement(mouseInfoNew, &LightObject1.ViewMatrixLight);	//flytta shadow map look pos
 		SetCursorPos(960, 540);
 	}
 	
@@ -1372,16 +1304,11 @@ void Mouse(){
 }
 
 void checkErrorBlob(HRESULT hr) {
-	if (hr == E_INVALIDARG) {
+	if (hr == E_INVALIDARG)
 		MessageBox(NULL,L"Blob ERROR: An invalid parameter was passed to the returning function",L"Error", MB_OK);
-		return;
-	}
-	else if (hr == E_OUTOFMEMORY) {
+	else if (hr == E_OUTOFMEMORY)
 		MessageBox(NULL, L"Blob ERROR: Out of memory ", L"Error", MB_OK);
-		return;
-	}
-	else if (FAILED(hr)) {
+	else if (FAILED(hr))
 		MessageBox(NULL, L"Blob ERROR: An unknown error occured ", L"Error", MB_OK);
-		return;
-	}
+	return;
 }
