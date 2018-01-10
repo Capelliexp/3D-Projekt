@@ -33,10 +33,10 @@ void GS_main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> OutputStream
 
 	for (int i = 0; i < 3; i++) {
 
-		output.PositionWS = mul(input[i].Pos, WorldMatrix).xyz;		//varför .xyz ???
-		output.NormalWS = normalize(mul(input[i].Normal, (float3x3)WorldMatrix));	//varför endast 3x3 ???
+		output.PositionWS = mul(input[i].Pos, WorldMatrix).xyz;
+		output.NormalWS = normalize(mul(input[i].Normal, (float3x3)WorldMatrix));
 
-		output.view = (int)0;		//Här kan man byta Viewport
+		output.view = (int)0;		//select viewport (currently only have 1)
 
 		//----	Backface culling
 		if (i == 0) {
@@ -50,16 +50,16 @@ void GS_main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> OutputStream
 		}
 		//----
 
+		//calc correct normal vector in world
 		output.NormalCS = mul(output.NormalWS, (float3x3)ViewMatrix);
 		output.NormalCS = normalize(mul(output.NormalCS, (float3x3)ProjectionMatrix));
 
+		//place the triangle in the world
 		output.PositionCS = mul(input[i].Pos, WorldMatrix);
 		output.PositionCS = mul(output.PositionCS, ViewMatrix);
 		output.PositionCS = mul(output.PositionCS, ProjectionMatrix);
 
 		output.TexCoord = input[i].Tex;
-
-		
 
 		OutputStream.Append(output);
 	}
