@@ -47,7 +47,7 @@ ID3D11Buffer* gVertexBuffer_Light = nullptr;
 ID3D11Buffer* gVertexBuffer_Box = nullptr;
 ID3D11Buffer* gVertexBuffer_Ball = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake1 = nullptr;
-ID3D11Buffer* gVertexBuffer_Drake2 = nullptr;
+ID3D11Buffer* gVertexBuffer_Drake2 = nullptr;	//3 additional dragons not currently used
 ID3D11Buffer* gVertexBuffer_Drake3 = nullptr;
 ID3D11Buffer* gVertexBuffer_Drake4 = nullptr;
 

@@ -77,17 +77,16 @@ float3 CalcLighting(float LightRange, float3 PositionLight, float3 ViewLight, fl
 }
 
 float readShadowMap(float3 pixelPos3D) {
-	float3 camToPixel = pixelPos3D - CamPosition;
-	float lightToPixelLength = length(pixelPos3D - PosLight);
-
 	float4 newPos = mul(float4(pixelPos3D, 1.0f), mul(ViewMatrixLight, ProjectionMatrixLight));
-	newPos.xyz /= newPos.w;
+	newPos.xyz /= newPos.w;		//divide by w to "flatten out" the view (homogeneous 3d magic)
+	
+	//newPos now has (0,0) in center of screen and span -1 to 1 in both x and y, this must be fixed
 
-	float2 textureCoordinates = float2((newPos.x / 2.0) + 0.5, (newPos.y / -2.0) + 0.5);
+	float2 textureCoordinates = float2((newPos.x / 2.0) + 0.5, (newPos.y / -2.0) + 0.5);	//we now know WHERE in ShadowMapTexture we need to look to get the correct depth value
 
 	float depthValue = ShadowMapTexture.Sample(sampAni, textureCoordinates).r + 0.0001f;
 
-	//return a light strength
+	//return a light strength, depending on if the light can reach the pixel
 	if (depthValue < newPos.z) return 0.0;
 	else return 1.0;
 }

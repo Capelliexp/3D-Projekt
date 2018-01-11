@@ -1,3 +1,6 @@
-﻿  main.cpp
-d:\git repos\3d-projekt\main.cpp(226): warning C4244: '=' : conversion from 'float' to 'unsigned int', possible loss of data
+﻿D:\Git Repos\3D-Projekt\ComputeShaderBloom.hlsl(37,41-54): warning X3081: comma expression used where a vector constructor may have been intended
+D:\Git Repos\3D-Projekt\ComputeShaderBloom.hlsl(37,65-68): warning X3081: comma expression used where a vector constructor may have been intended
+FXC : warning X4714: sum of temp registers and indexable temp registers times 576 threads exceeds the recommended total 16384.  Performance may be reduced
+  
+  compilation object save succeeded; see D:\Git Repos\3D-Projekt\Debug\ComputeShaderBloom.cso
   Demo.vcxproj -> D:\Git Repos\3D-Projekt\Debug\Project.exe
