@@ -20,29 +20,24 @@ cbuffer CamPos:register(b1) {
 	float3 CamPosition;
 };
 
-cbuffer Shadow:register(b2) {
-	matrix InverseViewMatrix;
-	matrix InverseProjectionMatrix;
-};
-
-cbuffer Matrices:register(b3) {
+cbuffer Matrices:register(b2) {
 	matrix WorldMatrix;
 	matrix ViewMatrix;
 	matrix ProjectionMatrix;
 };
 
 struct VS_OUT {
-	float4 PositionQuad : SV_Position;	//position on full screen quad
+	float4 PositionQuad : SV_Position;
 	float2 TexCoord : TexCoord;
 };
 
-float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition, float shadowValue) {
+float3 CalcLighting(float LightRange, float3 PositionLight, float3 ViewLight, float2 SpotlightAngles, float3 LightColor, uint LightType, float3 color, float3 specular_color, float3 specular_power, float3 normal, float3 position, float3 CamPosition, float shadowValue) {
 
 	float3 lightVector;
 	float attenuation = 1;
 
 	if (LightType == 1 || LightType == 3) {	//pointlight or spotlight - base the the light vector on the light position
-		lightVector = PosLight.xyz - position;
+		lightVector = PositionLight.xyz - position;
 
 		//Calculate attenuation based on distance from the light source
 		float dist = length(lightVector);
@@ -66,17 +61,17 @@ float3 CalcLighting(float LightRange, float3 PosLight, float3 ViewLight, float2 
 	// Calculate the specular term
 	float3 camToPointVector = position - CamPosition;
 	float3 reflectionVectorNormalized = normalize(reflect(camToPointVector, normal));
-	float3 v = PosLight - position;
+	float3 v = PositionLight - position;
 	float3 d = dot(v, reflectionVectorNormalized);
 	float3 closestPointToLight = position + reflectionVectorNormalized * d;	//now we know the point on the ray that is closest to the light
-	float dist = distance(closestPointToLight, PosLight);	//calc the closest distance between the the ray and the light
+	float dist = distance(closestPointToLight, PositionLight);	//calc the closest distance between the the ray and the light
 	float3 specular = LightColor * saturate(1.5 - dist);
 
 	//Ambient
 	float3 ambient = color * 0.02;
 
 	//Final
-	float3 shading = ambient + (diffuse + specular) * shadowValue * attenuation;
+	float3 shading = ambient + ((diffuse + specular) * shadowValue * attenuation);
 
 	return shading;
 }

@@ -73,7 +73,6 @@ ID3D11ShaderResourceView* gShadowView;	//för shadow mapping
 ID3D11Buffer* MatriserBuffer = nullptr;
 ID3D11Buffer* CamPosBuffer = nullptr;
 ID3D11Buffer* LightBuffer_1 = nullptr;
-ID3D11Buffer* ShadowBuffer_1 = nullptr;
 
 //-----------------------	Shaders
 
@@ -178,15 +177,6 @@ struct WVPI_Matriser {
 
 WVPI_Matriser MatrixObject;
 
-//-----------------------	struct w. data required for shadow calcs
-
-struct LightShadingShadows {
-	XMMATRIX CameraViewInverseMatrix;		//64-byte
-	XMMATRIX CameraProjectionInverseMatrix;	//64-byte
-};
-
-LightShadingShadows ShadowInfo;
-
 //-------
 
 void CreateMatrixObjects(){
@@ -215,26 +205,6 @@ void CreateMatrixObjects(){
 	WVPI.SysMemSlicePitch = 0;
 
 	gDevice->CreateBuffer(&MatrixBufferDesc, &WVPI, &MatriserBuffer);
-}
-
-void CreateShadowObjects() {
-	ShadowInfo.CameraViewInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
-	ShadowInfo.CameraProjectionInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
-
-	D3D11_BUFFER_DESC ShadowBufferDesc;
-	memset(&ShadowBufferDesc, 0, sizeof(ShadowBufferDesc));
-	ShadowBufferDesc.ByteWidth = sizeof(ShadowInfo);
-	ShadowBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	ShadowBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	ShadowBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	ShadowBufferDesc.MiscFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA Shadow1;
-	Shadow1.pSysMem = &ShadowInfo;
-	Shadow1.SysMemPitch = 0;
-	Shadow1.SysMemSlicePitch = 0;
-
-	gDevice->CreateBuffer(&ShadowBufferDesc, &Shadow1, &ShadowBuffer_1);
 }
 
 void CreateLightObjects() {
@@ -279,8 +249,6 @@ void CreateLightObjects() {
 	Light1.SysMemSlicePitch = 0;
 
 	gDevice->CreateBuffer(&LightBufferDesc, &Light1, &LightBuffer_1);
-
-	CreateShadowObjects();
 }
 
 void CreateOtherBuffers(){
@@ -1052,8 +1020,7 @@ void RenderLightShadingPass(){
 
 	gDeviceContext->PSSetConstantBuffers(0, 1, &LightBuffer_1);	//light
 	gDeviceContext->PSSetConstantBuffers(1, 1, &CamPosBuffer);
-	gDeviceContext->PSSetConstantBuffers(2, 1, &ShadowBuffer_1);
-	gDeviceContext->PSSetConstantBuffers(3, 1, &MatriserBuffer);
+	gDeviceContext->PSSetConstantBuffers(2, 1, &MatriserBuffer);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &gFirstPassSRV[0]);	//texturer från light shading pass
 	gDeviceContext->PSSetShaderResources(1, 1, &gFirstPassSRV[1]);
@@ -1211,37 +1178,29 @@ void Clock(){
 	FPS = TotalFrames.QuadPart - OldClock.QuadPart;
 }
 
-void Update(){
-	ShadowInfo.CameraViewInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ViewMatrix);
-	ShadowInfo.CameraProjectionInverseMatrix = XMMatrixInverse(NULL, MatrixObject.ProjectionMatrix);
-	
+void Update(){	
 	//mapped_subresource
 	D3D11_MAPPED_SUBRESOURCE mappedResource1;
 	D3D11_MAPPED_SUBRESOURCE mappedResource2;
 	D3D11_MAPPED_SUBRESOURCE mappedResource3;
-	D3D11_MAPPED_SUBRESOURCE mappedResource4;
 	ZeroMemory(&mappedResource1, sizeof(D3D11_MAPPED_SUBRESOURCE));
 	ZeroMemory(&mappedResource2, sizeof(D3D11_MAPPED_SUBRESOURCE));
 	ZeroMemory(&mappedResource3, sizeof(D3D11_MAPPED_SUBRESOURCE));
-	ZeroMemory(&mappedResource4, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
 	//Map
 	gDeviceContext->Map(MatriserBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource1);
 	gDeviceContext->Map(CamPosBuffer,	0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource2);
 	gDeviceContext->Map(LightBuffer_1,	0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource3);
-	gDeviceContext->Map(ShadowBuffer_1, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource4);
 
 	//Update
 	memcpy(mappedResource1.pData, &MatrixObject,	sizeof(MatrixObject));
 	memcpy(mappedResource2.pData, &CurrentCamPos,	sizeof(CurrentCamPos));
 	memcpy(mappedResource3.pData, &LightObject1,	sizeof(LightObject1));
-	memcpy(mappedResource4.pData, &ShadowInfo,		sizeof(ShadowInfo));
 
 	//Unmap
 	gDeviceContext->Unmap(MatriserBuffer, 0);
 	gDeviceContext->Unmap(CamPosBuffer, 0);
 	gDeviceContext->Unmap(LightBuffer_1, 0);
-	gDeviceContext->Unmap(ShadowBuffer_1, 0);
 }
 
 void Keyboard(){
